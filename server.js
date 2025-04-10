@@ -1,11 +1,17 @@
-// server.js
 require("dotenv").config();
 const express = require("express");
-const bodyParser = require("body-parser");
 const axios = require("axios");
 
 const app = express();
-app.use(bodyParser.json());
+
+// ✅ Replacing body-parser with express.json() and preserving raw body
+app.use(
+  express.json({
+    verify: (req, res, buf) => {
+      req.rawBody = buf.toString(); // Optional: useful if you need raw body for signature verification later
+    },
+  })
+);
 
 // Store user session temporarily in memory
 const sessions = {};
