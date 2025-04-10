@@ -1,11 +1,11 @@
 // server.js
 require("dotenv").config();
-import express from "express";
-import { json } from "body-parser";
-import { post } from "axios";
+const express = require("express");
+const bodyParser = require("body-parser");
+const axios = require("axios");
 
 const app = express();
-app.use(json());
+app.use(bodyParser.json());
 
 // Store user session temporarily in memory
 const sessions = {};
@@ -81,7 +81,7 @@ app.post("/webhook", async (req, res) => {
   }
 
   // Send response via WhatsApp API
-  await post(
+  await axios.post(
     "https://graph.facebook.com/v18.0/" + process.env.PHONE_NUMBER_ID + "/messages",
     {
       messaging_product: "whatsapp",
