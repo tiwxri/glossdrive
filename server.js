@@ -36,7 +36,7 @@ app.post("/webhook", async (req, res) => {
   const changes = entry?.changes?.[0];
   const message = changes?.value?.messages?.[0];
   const phone_number = message?.from;
-  const msg_body = message?.text?.body;
+  const msg_body = message?.text?.body.toLowerCase(); // Convert the message to lowercase for easier matching
 
   if (!message || !phone_number) return res.sendStatus(200);
 
@@ -47,43 +47,50 @@ app.post("/webhook", async (req, res) => {
   const session = sessions[phone_number];
   let reply = "";
 
-  switch (session.step) {
-    case 0:
-      reply =
-        "Hi there! 👋 Welcome to *10Min Car Clean* — your car's best friend! 🚗✨\nPlease choose a service:\n1. 🚘 Exterior Wash\n2. 🧼 Interior Detailing\n3. 🧽 Full Body Cleaning\n4. 📦 Monthly Subscription";
-      session.step = 1;
-      break;
-
-    case 1:
-      const services = {
-        "1": "Exterior Wash",
-        "2": "Interior Detailing",
-        "3": "Full Body Cleaning",
-        "4": "Monthly Subscription",
-      };
-      if (!services[msg_body]) {
-        reply = "❌ Invalid choice. Please reply with 1, 2, 3, or 4.";
+  // Check for custom predefined triggers (e.g., "hey" or "hey!")
+  if (msg_body === "hey" || msg_body === "hey!") {
+    reply = "Hello there! 👋 How can I assist you with our services today?";
+    session.step = 0;
+  } else {
+    // Proceed with existing flow
+    switch (session.step) {
+      case 0:
+        reply =
+          "Hi there! 👋 Welcome to *10Min Car Clean* — your car's best friend! 🚗✨\nPlease choose a service:\n1. 🚘 Exterior Wash\n2. 🧼 Interior Detailing\n3. 🧽 Full Body Cleaning\n4. 📦 Monthly Subscription";
+        session.step = 1;
         break;
-      }
-      session.data.service = services[msg_body];
-      session.step = 2;
-      reply = "Great choice! 🚀\nPlease tell us your *car company and model* (e.g., Honda City 2022).";
-      break;
 
-    case 2:
-      session.data.car_model = msg_body;
-      session.step = 3;
-      reply = "Awesome. Now please *share your current location* 📍 or type your address below.";
-      break;
+      case 1:
+        const services = {
+          "1": "Exterior Wash",
+          "2": "Interior Detailing",
+          "3": "Full Body Cleaning",
+          "4": "Monthly Subscription",
+        };
+        if (!services[msg_body]) {
+          reply = "❌ Invalid choice. Please reply with 1, 2, 3, or 4.";
+          break;
+        }
+        session.data.service = services[msg_body];
+        session.step = 2;
+        reply = "Great choice! 🚀\nPlease tell us your *car company and model* (e.g., Honda City 2022).";
+        break;
 
-    case 3:
-      session.data.user_location = msg_body;
-      session.step = 4;
-      reply = `Here's the payment link for *${session.data.service}* 💳:\nhttps://rzp.io/l/samplePaymentLink\nPlease complete the payment and we’ll confirm your booking.`;
-      break;
+      case 2:
+        session.data.car_model = msg_body;
+        session.step = 3;
+        reply = "Awesome. Now please *share your current location* 📍 or type your address below.";
+        break;
 
-    default:
-      reply = "🙏 Thank you! We’ve received your request. If you want to book another service, type 'Hi'.";
+      case 3:
+        session.data.user_location = msg_body;
+        session.step = 4;
+        reply = `Here's the payment link for *${session.data.service}* 💳:\nhttps://rzp.io/l/samplePaymentLink\nPlease complete the payment and we’ll confirm your booking.`;
+        break;
+
+      default:
+        reply = "🙏 Thank you! We’ve received your request. If you want to book another service, type 'Hi'.";
+    }
   }
 
   // Send response via WhatsApp API
