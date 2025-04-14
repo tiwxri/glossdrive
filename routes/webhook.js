@@ -1,12 +1,11 @@
-// routes/webhook.js
-
 const express = require('express');
 const { handleIncomingMessage } = require('../services/whatsappServices');  // Import the bot logic
 const router = express.Router();
 
 // Webhook route to handle incoming WhatsApp messages
 router.post('/webhook', async (req, res) => {
-  const message = req.body;  // Assuming the message body is coming in as JSON
+  console.log('Incoming message:', req.body);  // Log incoming message
+  const message = req.body;
 
   try {
     await handleIncomingMessage(message);

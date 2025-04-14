@@ -1,5 +1,3 @@
-// server.js
-
 const express = require('express');
 const bodyParser = require('body-parser');
 const webhookRoute = require('./routes/webhook');  // Import webhook route

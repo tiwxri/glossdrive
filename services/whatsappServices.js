@@ -1,15 +1,17 @@
 const getGreetingMessage = require('../utils/greetings');  // Import greeting logic from utils
 
-const userStates = {};  // You may want to use a persistent storage for states in production
+const userStates = {};  // Store user state
 
 async function handleIncomingMessage(message) {
   const userId = message.from;
   const msg = message.body.trim().toLowerCase();
 
+  // Log received message
+  console.log(`Message received from ${userId}: ${msg}`);
+
   // Handle greetings
   if (['hi', 'hello', 'hey'].includes(msg)) {
     const greeting = getGreetingMessage();  // Get greeting message based on time
-
     userStates[userId] = { step: 'mainMenu' };
 
     await message.reply(
@@ -18,7 +20,7 @@ async function handleIncomingMessage(message) {
     return;
   }
 
-  // Main menu options and handling
+  // Main menu options
   if (userStates[userId]?.step === 'mainMenu') {
     switch (msg) {
       case '1':
@@ -42,7 +44,7 @@ async function handleIncomingMessage(message) {
     }
   }
 
-  // Handle additional options for exterior and interior
+  // Handling add-ons for options
   if (userStates[userId]?.step === 'exteriorOptions') {
     switch (msg) {
       case 'a':
