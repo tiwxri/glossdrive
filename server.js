@@ -1,7 +1,6 @@
 require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
-const { getGreeting } = require("./utils/messageTemplates");
 
 const app = express();
 
@@ -12,26 +11,6 @@ app.use(
     },
   })
 );
-
-let sessions = {}; // For handling user sessions
-
-const greeting = getGreeting();
-
-const getTimeSlots = () => {
-  const now = new Date();
-  const hour = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })).getHours();
-  const slots = [];
-
-  for (let i = 1; i <= 3; i++) {
-    const start = hour + i;
-    const end = start + 1;
-    if (end <= 23) {
-      slots.push(`${start}:00 - ${end}:00`);
-    }
-  }
-
-  return slots.length ? slots : ["10:00 AM", "12:00 PM", "03:00 PM"];
-};
 
 const sendText = async (to, body) => {
   return axios.post(
@@ -77,42 +56,20 @@ const sendButtons = async (to, bodyText, buttons) => {
   );
 };
 
-// Webhook verification
-app.get("/webhook", (req, res) => {
-  const verify_token = process.env.VERIFY_TOKEN;
-  const mode = req.query["hub.mode"];
-  const token = req.query["hub.verify_token"];
-  const challenge = req.query["hub.challenge"];
-  if (mode && token && mode === "subscribe" && token === verify_token) {
-    return res.status(200).send(challenge);
-  } else {
-    return res.sendStatus(403);
-  }
-});
-
-// Main webhook logic
+// Webhook logic to start conversation
 app.post("/webhook", async (req, res) => {
   try {
-    console.log(JSON.stringify(req.body, null, 2));
-
     const value = req.body?.entry?.[0]?.changes?.[0]?.value;
     const message = value?.messages?.[0];
-    const status = value?.statuses?.[0];
 
-    if (status) return res.sendStatus(200); // Ignore status updates
+    if (!message) return res.sendStatus(200);
 
     const phone_number = message?.from;
     const msg_type = message?.type;
 
-    if (!message || !phone_number) return res.sendStatus(200); // Ensure valid message
-
-    const session = sessions[phone_number] || { step: 0, data: {} };
-    sessions[phone_number] = session;
-
     let userInput = "";
     let buttonId = "";
 
-    // Handle message types
     if (msg_type === "button") {
       buttonId = message.interactive?.button_reply?.id;
       userInput = message.interactive?.button_reply?.title?.toLowerCase();
@@ -120,15 +77,15 @@ app.post("/webhook", async (req, res) => {
       userInput = message.text?.body?.toLowerCase();
     }
 
-    const greeting = getGreeting();
+    const session = { step: 0, data: {} };
 
     switch (session.step) {
       case 0:
-        await sendText(phone_number, `${greeting} 👋 Welcome to *10Min Car Clean*! 🚗✨`);
+        await sendText(phone_number, "👋 Hello! Welcome to our Car Cleaning Service. What are you looking for?");
         await sendButtons(phone_number, "Please choose a service:", [
           { id: "service_1", title: "🚘 Exterior Wash" },
-          { id: "service_2", title: "🧼 Interior Detailing" },
-          { id: "service_3", title: "🧽 Full Body Cleaning" },
+          { id: "service_2", title: "🧼 Interior Wash" },
+          { id: "service_3", title: "🧽 Full Body Cleaning (Inside and Outside)" },
         ]);
         session.step = 1;
         break;
@@ -141,64 +98,40 @@ app.post("/webhook", async (req, res) => {
 
         session.data.service = buttonId;
 
-        // Conditional flow for add-ons based on service chosen
+        // Handle sub-options based on service selected
         if (buttonId === "service_1") {
           await sendButtons(phone_number, "Choose add-ons for Exterior Wash:", [
-            { id: "ext_1", title: "Wheel Shine" },
+            { id: "ext_1", title: "Wheel Polish" },
             { id: "ext_2", title: "Body Shine" },
-            { id: "ext_3", title: "Both" },
+            { id: "ext_3", title: "None" },
           ]);
           session.step = 2;
         } else if (buttonId === "service_2") {
-          await sendButtons(phone_number, "Choose add-ons for Interior Detailing:", [
-            { id: "int_1", title: "AC Vents" },
-            { id: "int_2", title: "Rug Cleaning" },
-            { id: "int_3", title: "Seat Cleaning" },
-            { id: "int_4", title: "All of them" },
+          await sendButtons(phone_number, "Choose add-ons for Interior Wash:", [
+            { id: "int_1", title: "AC Cleaning" },
+            { id: "int_2", title: "Rug and Seat Cleaning" },
+            { id: "int_3", title: "None" },
           ]);
           session.step = 2;
         } else {
-          session.data.addon = "None";
-          const slots = getTimeSlots();
-          await sendButtons(phone_number, "Select a preferred time slot:", [
-            { id: "slot_1", title: slots[0] },
-            { id: "slot_2", title: slots[1] },
-            { id: "slot_3", title: slots[2] },
-          ]);
+          // Full body cleaning automatically includes all options
+          session.data.addons = ["AC Cleaning", "Rug and Seat Cleaning", "Wheel Polish", "Body Shine"];
+          await sendText(phone_number, `✅ You've selected the Full Body Cleaning package.\n\nAdd-ons included: Wheel Polish, Body Shine, AC Cleaning, and Rug/Seat Cleaning.`);
           session.step = 3;
         }
         break;
 
       case 2:
-        if (!["ext_1", "ext_2", "ext_3", "int_1", "int_2", "int_3", "int_4"].includes(buttonId)) {
-          await sendText(phone_number, "❌ Invalid option. Please tap a button.");
-          return res.sendStatus(200);
+        // Process selected add-ons
+        if (buttonId === "ext_1" || buttonId === "ext_2" || buttonId === "ext_3") {
+          session.data.addon = buttonId === "ext_1" ? "Wheel Polish" : buttonId === "ext_2" ? "Body Shine" : "None";
+        } else if (buttonId === "int_1" || buttonId === "int_2" || buttonId === "int_3") {
+          session.data.addon = buttonId === "int_1" ? "AC Cleaning" : buttonId === "int_2" ? "Rug and Seat Cleaning" : "None";
         }
 
-        session.data.addon = buttonId;
-        const slots = getTimeSlots();
-        await sendButtons(phone_number, "Select a preferred time slot:", [
-          { id: "slot_1", title: slots[0] },
-          { id: "slot_2", title: slots[1] },
-          { id: "slot_3", title: slots[2] },
-        ]);
+        // Confirmation of selected service and add-ons
+        await sendText(phone_number, `✅ You've selected:\n\nService: ${session.data.service}\nAdd-on(s): ${session.data.addon || 'None'}`);
         session.step = 3;
-        break;
-
-      case 3:
-        if (!["slot_1", "slot_2", "slot_3"].includes(buttonId)) {
-          await sendText(phone_number, "❌ Invalid time slot. Please tap a button.");
-          return res.sendStatus(200);
-        }
-
-        const selectedSlot = getTimeSlots()[parseInt(buttonId.split("_")[1]) - 1];
-        session.data.slot = selectedSlot;
-
-        await sendText(
-          phone_number,
-          `✅ Booking confirmed!\n\nService: ${session.data.service}\nAdd-on: ${session.data.addon}\nTime Slot: ${session.data.slot}\n\nSee you soon! 🧼🚗`
-        );
-        session.step = 4;
         break;
 
       default:
@@ -208,7 +141,7 @@ app.post("/webhook", async (req, res) => {
 
     res.sendStatus(200);
   } catch (error) {
-    console.error("Error:", error.response?.data || error.message);
+    console.error("Error:", error.message);
     res.sendStatus(500);
   }
 });
