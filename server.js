@@ -1,21 +1,14 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const webhookRoute = require('./routes/webhook');
-const { startWhatsAppBot } = require('./services/whatsappBot'); // Bot starter
+const webhookRoutes = require('./routes/webhook');
+require('./services/whatsappBot'); // start WhatsApp bot
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Middleware
 app.use(bodyParser.json());
+app.use('/api', webhookRoutes);
 
-// Webhook route
-app.use('/api', webhookRoute);
-
-// Start server
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  console.log(`🚀 Server is running on port ${port}`);
 });
-
-// Start the WhatsApp bot
-startWhatsAppBot();

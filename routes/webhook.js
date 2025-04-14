@@ -1,10 +1,16 @@
 const express = require('express');
 const router = express.Router();
+const { handleIncomingMessage } = require('../services/whatsappServices');
 
-// Placeholder webhook
-router.post('/webhook', (req, res) => {
-  console.log('Received webhook:', req.body);
-  res.status(200).send('OK');
+router.post('/webhook', async (req, res) => {
+  try {
+    const message = req.body;
+    await handleIncomingMessage(message);
+    res.sendStatus(200);
+  } catch (err) {
+    console.error('❌ Error:', err);
+    res.sendStatus(500);
+  }
 });
 
 module.exports = router;
