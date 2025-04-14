@@ -3,36 +3,44 @@ const express = require("express");
 const axios = require("axios");
 
 const app = express();
-app.use(express.json());
+
+app.use(
+  express.json({
+    verify: (req, res, buf) => {
+      req.rawBody = buf.toString();
+    },
+  })
+);
 
 const sessions = {};
 
-// Helpers
 const getGreeting = () => {
-  const hour = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata", hour: "2-digit", hour12: false });
-  if (hour < 12) return "Good Morning 🌞";
-  if (hour < 17) return "Good Afternoon ☀️";
-  return "Good Evening 🌙";
+  const istTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+  const hour = istTime.getHours();
+  if (hour < 12) return "Good Morning";
+  if (hour < 17) return "Good Afternoon";
+  return "Good Evening";
 };
 
 const getTimeSlots = () => {
-  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-  const currentHour = now.getHours();
+  const now = new Date();
+  const hour = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })).getHours();
   const slots = [];
 
-  for (let i = 0; i < 3; i++) {
-    const start = currentHour + i;
+  for (let i = 1; i <= 3; i++) {
+    const start = hour + i;
     const end = start + 1;
-    if (end <= 22) {
+    if (end <= 23) {
       slots.push(`${start}:00 - ${end}:00`);
     }
   }
 
-  return slots;
+  // Fallback in case late-night hours don't generate slots
+  return slots.length ? slots : ["10:00 AM", "12:00 PM", "03:00 PM"];
 };
 
 const sendText = async (to, body) => {
-  await axios.post(
+  return axios.post(
     `https://graph.facebook.com/v18.0/${process.env.PHONE_NUMBER_ID}/messages`,
     {
       messaging_product: "whatsapp",
@@ -48,108 +56,171 @@ const sendText = async (to, body) => {
   );
 };
 
-const generateOrderId = () => {
-  return "ORDER-" + Math.random().toString(36).substr(2, 8).toUpperCase();
+const sendButtons = async (to, bodyText, buttons) => {
+  return axios.post(
+    `https://graph.facebook.com/v18.0/${process.env.PHONE_NUMBER_ID}/messages`,
+    {
+      messaging_product: "whatsapp",
+      to,
+      type: "interactive",
+      interactive: {
+        type: "button",
+        body: { text: bodyText },
+        action: {
+          buttons: buttons.map((b) => ({
+            type: "reply",
+            reply: { id: b.id, title: b.title },
+          })),
+        },
+      },
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
 };
 
-// Webhook Verification
+// Webhook verification
 app.get("/webhook", (req, res) => {
-  const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
+  const verify_token = process.env.VERIFY_TOKEN;
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
-  if (mode === "subscribe" && token === VERIFY_TOKEN) {
-    res.status(200).send(challenge);
+  if (mode && token && mode === "subscribe" && token === verify_token) {
+    return res.status(200).send(challenge);
   } else {
-    res.sendStatus(403);
+    return res.sendStatus(403);
   }
 });
 
-// Webhook Message Receiver
+// Main webhook logic
 app.post("/webhook", async (req, res) => {
   try {
-    const message = req.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
-    if (!message) return res.sendStatus(200);
+    console.log(JSON.stringify(req.body, null, 2));
 
-    const from = message.from;
-    const userMessage = message.text?.body?.toLowerCase();
-    let session = sessions[from] || { step: 0, data: {} };
-    sessions[from] = session;
+    const value = req.body?.entry?.[0]?.changes?.[0]?.value;
+    const message = value?.messages?.[0];
+    const status = value?.statuses?.[0];
+
+    if (status) return res.sendStatus(200);
+
+    const phone_number = message?.from;
+    const msg_type = message?.type;
+
+    if (!message || !phone_number) return res.sendStatus(200);
+
+    const session = sessions[phone_number] || { step: 0, data: {} };
+    sessions[phone_number] = session;
+
+    let userInput = "";
+    let buttonId = "";
+
+    if (msg_type === "button") {
+      buttonId = message.interactive?.button_reply?.id;
+      userInput = message.interactive?.button_reply?.title?.toLowerCase();
+    } else if (msg_type === "text") {
+      userInput = message.text?.body?.toLowerCase();
+    }
+
+    const greeting = getGreeting();
 
     switch (session.step) {
       case 0:
-        await sendText(from, `${getGreeting()}! Welcome to *10Min Car Clean* 🚗✨\n\nPlease choose a service:\n1. Exterior Wash\n2. Interior Detailing\n3. Full Body Cleaning`);
+        await sendText(
+          phone_number,
+          `${greeting} 👋 Welcome to *10Min Car Clean*! 🚗✨`
+        );
+        await sendButtons(phone_number, "Please choose a service:", [
+          { id: "service_1", title: "🚘 Exterior Wash" },
+          { id: "service_2", title: "🧼 Interior Detailing" },
+          { id: "service_3", title: "🧽 Full Body Cleaning" },
+        ]);
         session.step = 1;
         break;
 
       case 1:
-        if (["1", "2", "3"].includes(userMessage)) {
-          session.data.service = userMessage;
-          await sendText(from, `Any add-ons?\n1. Wheel Shine\n2. Body Shine\n3. All of them\n4. None`);
+        if (!["service_1", "service_2", "service_3"].includes(buttonId)) {
+          await sendText(phone_number, "❌ Invalid option. Please tap a button.");
+          return res.sendStatus(200);
+        }
+
+        session.data.service = buttonId;
+
+        if (buttonId === "service_1") {
+          await sendButtons(phone_number, "Choose add-ons for Exterior Wash:", [
+            { id: "ext_1", title: "Wheel Shine" },
+            { id: "ext_2", title: "Body Shine" },
+            { id: "ext_3", title: "Both" },
+          ]);
+          session.step = 2;
+        } else if (buttonId === "service_2") {
+          await sendButtons(phone_number, "Choose add-ons for Interior Detailing:", [
+            { id: "int_1", title: "AC Vents" },
+            { id: "int_2", title: "Rug Cleaning" },
+            { id: "int_3", title: "Seat Cleaning" },
+            { id: "int_4", title: "All of them" },
+          ]);
           session.step = 2;
         } else {
-          await sendText(from, "❌ Invalid input. Please choose 1, 2, or 3.");
+          session.data.addon = "None";
+          const slots = getTimeSlots();
+          await sendButtons(phone_number, "Select a preferred time slot:", [
+            { id: "slot_1", title: slots[0] },
+            { id: "slot_2", title: slots[1] },
+            { id: "slot_3", title: slots[2] },
+          ]);
+          session.step = 3;
         }
         break;
 
       case 2:
-        if (["1", "2", "3", "4"].includes(userMessage)) {
-          session.data.addon = userMessage;
-          const slots = getTimeSlots();
-          let slotMsg = "Please select a time slot:\n";
-          slots.forEach((s, i) => slotMsg += `${i + 1}. ${s}\n`);
-          session.data.slots = slots;
-          await sendText(from, slotMsg);
-          session.step = 3;
-        } else {
-          await sendText(from, "❌ Invalid input. Choose from 1, 2, 3, or 4.");
+        if (
+          !["ext_1", "ext_2", "ext_3", "int_1", "int_2", "int_3", "int_4"].includes(buttonId)
+        ) {
+          await sendText(phone_number, "❌ Invalid option. Please tap a button.");
+          return res.sendStatus(200);
         }
+
+        session.data.addon = buttonId;
+        const slots = getTimeSlots();
+        await sendButtons(phone_number, "Select a preferred time slot:", [
+          { id: "slot_1", title: slots[0] },
+          { id: "slot_2", title: slots[1] },
+          { id: "slot_3", title: slots[2] },
+        ]);
+        session.step = 3;
         break;
 
       case 3:
-        if (["1", "2", "3"].includes(userMessage)) {
-          session.data.time = session.data.slots[parseInt(userMessage) - 1];
-
-          // Pricing logic (dummy)
-          let price = 200;
-          if (session.data.service === "2") price = 300;
-          if (session.data.service === "3") price = 400;
-          if (session.data.addon === "3") price += 100;
-
-          session.data.price = price;
-
-          await sendText(from, `Here’s your summary:\n\nService: ${session.data.service}\nAdd-on: ${session.data.addon}\nTime: ${session.data.time}\nTotal: ₹${price}\n\nWould you like to:\n1. Make Payment\n2. Start Again`);
-          session.step = 4;
-        } else {
-          await sendText(from, "❌ Invalid slot. Choose 1, 2, or 3.");
+        if (!["slot_1", "slot_2", "slot_3"].includes(buttonId)) {
+          await sendText(phone_number, "❌ Invalid time slot. Please tap a button.");
+          return res.sendStatus(200);
         }
-        break;
 
-      case 4:
-        if (userMessage === "1") {
-          const orderId = generateOrderId();
-          await sendText(from, `✅ Payment successful!\nYour booking is confirmed.\nOrder ID: *${orderId}*`);
-          session.step = 5;
-        } else if (userMessage === "2") {
-          sessions[from] = { step: 0, data: {} };
-          await sendText(from, "🔁 Starting again...\nPlease choose a service:\n1. Exterior Wash\n2. Interior Detailing\n3. Full Body Cleaning");
-          session.step = 1;
-        } else {
-          await sendText(from, "❌ Invalid input. Type 1 or 2.");
-        }
+        const selectedSlot = getTimeSlots()[parseInt(buttonId.split("_")[1]) - 1];
+        session.data.slot = selectedSlot;
+
+        await sendText(
+          phone_number,
+          `✅ Booking confirmed!\n\nService: ${session.data.service}\nAdd-on: ${session.data.addon}\nTime Slot: ${session.data.slot}\n\nSee you soon! 🧼🚗`
+        );
+        session.step = 4;
         break;
 
       default:
-        await sendText(from, "Type *Hi* to start again.");
+        await sendText(phone_number, "Type *Hi* to start a new booking.");
         session.step = 0;
     }
 
     res.sendStatus(200);
-  } catch (err) {
-    console.error("Webhook Error:", err.message);
+  } catch (error) {
+    console.error("Error:", error.response?.data || error.message);
     res.sendStatus(500);
   }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () => console.log("🚀 Bot running on port " + PORT));
