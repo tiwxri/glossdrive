@@ -3,6 +3,7 @@ const express = require("express");
 const axios = require("axios");
 
 const app = express();
+const sessions = {}; // In-memory session storage for simplicity
 
 app.use(
   express.json({
@@ -66,21 +67,18 @@ app.post("/webhook", async (req, res) => {
 
     const phone_number = message?.from;
     const msg_type = message?.type;
+    const buttonId = message.interactive?.button_reply?.id;
+    const userInput = msg_type === "text" ? message.text?.body?.toLowerCase() : buttonId;
 
-    let userInput = "";
-    let buttonId = "";
-
-    if (msg_type === "button") {
-      buttonId = message.interactive?.button_reply?.id;
-      userInput = message.interactive?.button_reply?.title?.toLowerCase();
-    } else if (msg_type === "text") {
-      userInput = message.text?.body?.toLowerCase();
+    // Initialize session for the user if not already present
+    if (!sessions[phone_number]) {
+      sessions[phone_number] = { step: 0, data: {} };
     }
 
-    const session = { step: 0, data: {} };
+    const session = sessions[phone_number];
 
     switch (session.step) {
-      case 0:
+      case 0: // Greeting and Service Selection
         await sendText(phone_number, "👋 Hello! Welcome to our Car Cleaning Service. What are you looking for?");
         await sendButtons(phone_number, "Please choose a service:", [
           { id: "service_1", title: "🚘 Exterior Wash" },
@@ -90,53 +88,52 @@ app.post("/webhook", async (req, res) => {
         session.step = 1;
         break;
 
-      case 1:
-        if (!["service_1", "service_2", "service_3"].includes(buttonId)) {
-          await sendText(phone_number, "❌ Invalid option. Please tap a button.");
+      case 1: // Handle Service Selection
+        if (!["service_1", "service_2", "service_3"].includes(userInput)) {
+          await sendText(phone_number, "❌ Invalid option. Please choose a valid service.");
           return res.sendStatus(200);
         }
 
-        session.data.service = buttonId;
+        session.data.service = userInput;
 
         // Handle sub-options based on service selected
-        if (buttonId === "service_1") {
+        if (userInput === "service_1") {
           await sendButtons(phone_number, "Choose add-ons for Exterior Wash:", [
             { id: "ext_1", title: "Wheel Polish" },
             { id: "ext_2", title: "Body Shine" },
             { id: "ext_3", title: "None" },
           ]);
           session.step = 2;
-        } else if (buttonId === "service_2") {
+        } else if (userInput === "service_2") {
           await sendButtons(phone_number, "Choose add-ons for Interior Wash:", [
             { id: "int_1", title: "AC Cleaning" },
             { id: "int_2", title: "Rug and Seat Cleaning" },
             { id: "int_3", title: "None" },
           ]);
           session.step = 2;
-        } else {
-          // Full body cleaning automatically includes all options
+        } else if (userInput === "service_3") {
+          // Full body cleaning includes all options
           session.data.addons = ["AC Cleaning", "Rug and Seat Cleaning", "Wheel Polish", "Body Shine"];
           await sendText(phone_number, `✅ You've selected the Full Body Cleaning package.\n\nAdd-ons included: Wheel Polish, Body Shine, AC Cleaning, and Rug/Seat Cleaning.`);
-          session.step = 3;
+          session.step = 3; // Go to confirmation step
         }
         break;
 
-      case 2:
-        // Process selected add-ons
-        if (buttonId === "ext_1" || buttonId === "ext_2" || buttonId === "ext_3") {
-          session.data.addon = buttonId === "ext_1" ? "Wheel Polish" : buttonId === "ext_2" ? "Body Shine" : "None";
-        } else if (buttonId === "int_1" || buttonId === "int_2" || buttonId === "int_3") {
-          session.data.addon = buttonId === "int_1" ? "AC Cleaning" : buttonId === "int_2" ? "Rug and Seat Cleaning" : "None";
+      case 2: // Handle Add-on Selection
+        if (userInput === "ext_1" || userInput === "ext_2" || userInput === "ext_3") {
+          session.data.addon = userInput === "ext_1" ? "Wheel Polish" : userInput === "ext_2" ? "Body Shine" : "None";
+        } else if (userInput === "int_1" || userInput === "int_2" || userInput === "int_3") {
+          session.data.addon = userInput === "int_1" ? "AC Cleaning" : userInput === "int_2" ? "Rug and Seat Cleaning" : "None";
         }
 
-        // Confirmation of selected service and add-ons
+        // Confirm selection
         await sendText(phone_number, `✅ You've selected:\n\nService: ${session.data.service}\nAdd-on(s): ${session.data.addon || 'None'}`);
-        session.step = 3;
+        session.step = 3; // Move to confirmation step
         break;
 
       default:
         await sendText(phone_number, "Type *Hi* to start a new booking.");
-        session.step = 0;
+        session.step = 0; // Reset the session
     }
 
     res.sendStatus(200);
