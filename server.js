@@ -64,9 +64,9 @@ app.post("/webhook", async (req, res) => {
           type: "interactive",
           interactive: {
             type: "button",
-            body: {
-              text:
-                "Hi there! 👋 Welcome to *10Min Car Clean* — your car's best friend! 🚗✨\nPlease choose a service:",
+            header: {
+              type: "text",
+              text: "Hi there! 👋 Welcome to *10Min Car Clean* — your car's best friend! 🚗✨\nPlease choose a service:",
             },
             action: {
               buttons: [
