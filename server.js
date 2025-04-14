@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
+const { getGreeting } = require("./utils/messageTemplates");
 
 const app = express();
 
@@ -12,15 +13,9 @@ app.use(
   })
 );
 
-const sessions = {};
+let sessions = {}; // For handling user sessions
 
-const getGreeting = () => {
-  const istTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-  const hour = istTime.getHours();
-  if (hour < 12) return "Good Morning";
-  if (hour < 17) return "Good Afternoon";
-  return "Good Evening";
-};
+const greeting = getGreeting();
 
 const getTimeSlots = () => {
   const now = new Date();
@@ -35,7 +30,6 @@ const getTimeSlots = () => {
     }
   }
 
-  // Fallback in case late-night hours don't generate slots
   return slots.length ? slots : ["10:00 AM", "12:00 PM", "03:00 PM"];
 };
 
@@ -105,12 +99,12 @@ app.post("/webhook", async (req, res) => {
     const message = value?.messages?.[0];
     const status = value?.statuses?.[0];
 
-    if (status) return res.sendStatus(200);
+    if (status) return res.sendStatus(200); // Ignore status updates
 
     const phone_number = message?.from;
     const msg_type = message?.type;
 
-    if (!message || !phone_number) return res.sendStatus(200);
+    if (!message || !phone_number) return res.sendStatus(200); // Ensure valid message
 
     const session = sessions[phone_number] || { step: 0, data: {} };
     sessions[phone_number] = session;
@@ -118,6 +112,7 @@ app.post("/webhook", async (req, res) => {
     let userInput = "";
     let buttonId = "";
 
+    // Handle message types
     if (msg_type === "button") {
       buttonId = message.interactive?.button_reply?.id;
       userInput = message.interactive?.button_reply?.title?.toLowerCase();
@@ -129,10 +124,7 @@ app.post("/webhook", async (req, res) => {
 
     switch (session.step) {
       case 0:
-        await sendText(
-          phone_number,
-          `${greeting} 👋 Welcome to *10Min Car Clean*! 🚗✨`
-        );
+        await sendText(phone_number, `${greeting} 👋 Welcome to *10Min Car Clean*! 🚗✨`);
         await sendButtons(phone_number, "Please choose a service:", [
           { id: "service_1", title: "🚘 Exterior Wash" },
           { id: "service_2", title: "🧼 Interior Detailing" },
@@ -149,6 +141,7 @@ app.post("/webhook", async (req, res) => {
 
         session.data.service = buttonId;
 
+        // Conditional flow for add-ons based on service chosen
         if (buttonId === "service_1") {
           await sendButtons(phone_number, "Choose add-ons for Exterior Wash:", [
             { id: "ext_1", title: "Wheel Shine" },
@@ -177,9 +170,7 @@ app.post("/webhook", async (req, res) => {
         break;
 
       case 2:
-        if (
-          !["ext_1", "ext_2", "ext_3", "int_1", "int_2", "int_3", "int_4"].includes(buttonId)
-        ) {
+        if (!["ext_1", "ext_2", "ext_3", "int_1", "int_2", "int_3", "int_4"].includes(buttonId)) {
           await sendText(phone_number, "❌ Invalid option. Please tap a button.");
           return res.sendStatus(200);
         }
