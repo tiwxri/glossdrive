@@ -1,4 +1,3 @@
-// Function to return greeting based on time of the day
 function getGreetingMessage() {
     const currentHour = new Date().getHours();
   
