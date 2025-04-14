@@ -16,8 +16,6 @@ const sessions = {};
 
 const getGreeting = () => {
   const now = new Date();
-  const hour = now.getHours(); // This assumes server is in correct timezone
-  // Convert to IST (Indian Standard Time) if needed
   const istHour = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })).getHours();
 
   if (istHour < 12) return "Good morning ☀️";
@@ -99,18 +97,15 @@ app.get("/webhook", (req, res) => {
 });
 
 // Main webhook logic
-console.log(JSON.stringify(req.body, null, 2));
-
 app.post("/webhook", async (req, res) => {
   try {
+    console.log(JSON.stringify(req.body, null, 2)); // ✅ Correct location
+
     const value = req.body?.entry?.[0]?.changes?.[0]?.value;
     const message = value?.messages?.[0];
     const status = value?.statuses?.[0];
 
-    if (status) {
-      // Just acknowledge status updates to prevent "unsupported" errors
-      return res.sendStatus(200);
-    }
+    if (status) return res.sendStatus(200);
 
     const phone_number = message?.from;
     const msg_type = message?.type;
@@ -120,7 +115,6 @@ app.post("/webhook", async (req, res) => {
     const session = sessions[phone_number] || { step: 0, data: {} };
     sessions[phone_number] = session;
 
-    // Helper: Get greeting based on IST
     function getGreeting() {
       const istTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
       const hour = istTime.getHours();
@@ -129,7 +123,6 @@ app.post("/webhook", async (req, res) => {
       return "Good Evening";
     }
 
-    // Helper: Dummy time slot function
     function getTimeSlots() {
       return ["10:00 AM", "12:00 PM", "03:00 PM"];
     }
@@ -240,7 +233,6 @@ app.post("/webhook", async (req, res) => {
     res.sendStatus(500);
   }
 });
-
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("🚀 Bot running on port " + PORT));
