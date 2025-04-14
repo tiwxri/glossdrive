@@ -1,5 +1,5 @@
 const express = require("express");
-const sendGreeting = require("./utils/greeting"); // Import greeting
+const sendGreeting = require("./utils/greetings"); // Import greeting
 const app = express();
 app.use(express.json());
 
