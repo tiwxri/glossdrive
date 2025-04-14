@@ -106,10 +106,10 @@ app.post("/webhook", async (req, res) => {
     let button_id = "";
 
     if (msg_type === "button") {
-      msg_body = message.button.text?.toLowerCase();
-      button_id = message.button.payload || message.button.id;
+      msg_body = message.interactive?.button_reply?.title?.toLowerCase();
+      button_id = message.interactive?.button_reply?.id;
     } else if (msg_type === "text") {
-      msg_body = message.text.body?.toLowerCase();
+      msg_body = message.text?.body?.toLowerCase();
     }
 
     if (!sessions[phone_number]) {
@@ -133,72 +133,72 @@ app.post("/webhook", async (req, res) => {
         session.step = 1;
         break;
 
-        case 1:
-          if (!["service_1", "service_2", "service_3"].includes(button_id)) {
-            await sendText(phone_number, "❌ Invalid option. Please tap a button.");
-            return res.sendStatus(200);
-          }
-  
-          session.data.service = button_id;
-  
-          if (button_id === "service_1") {
-            await sendButtons(phone_number, "Choose add-ons for Exterior Wash:", [
-              { id: "ext_1", title: "Wheel Shine" },
-              { id: "ext_2", title: "Body Shine" },
-              { id: "ext_3", title: "Both" },
-            ]);
-            session.step = 1.1;
-          } else if (button_id === "service_2") {
-            await sendButtons(phone_number, "Choose add-ons for Interior Detailing:", [
-              { id: "int_1", title: "AC Vents" },
-              { id: "int_2", title: "Rug Cleaning" },
-              { id: "int_3", title: "Seat Cleaning" },
-              { id: "int_4", title: "All of them" },
-            ]);
-            session.step = 1.2;
-          } else {
-            session.data.addon = "None";
-            const slots = getTimeSlots();
-            await sendButtons(phone_number, "Select a preferred time slot:", [
-              { id: "slot_1", title: slots[0] },
-              { id: "slot_2", title: slots[1] },
-              { id: "slot_3", title: slots[2] },
-            ]);
-            session.step = 3;
-          }
-          break;
-  
-        case 1.1: // Add-ons for Exterior Wash
-          if (!["ext_1", "ext_2", "ext_3"].includes(button_id)) {
-            await sendText(phone_number, "❌ Invalid option. Please tap a button.");
-            return res.sendStatus(200);
-          }
-  
-          session.data.addon = button_id;
-          const slots1 = getTimeSlots();
+      case 1:
+        if (!["service_1", "service_2", "service_3"].includes(button_id)) {
+          await sendText(phone_number, "❌ Invalid option. Please tap a button.");
+          return res.sendStatus(200);
+        }
+
+        session.data.service = button_id;
+
+        if (button_id === "service_1") {
+          await sendButtons(phone_number, "Choose add-ons for Exterior Wash:", [
+            { id: "ext_1", title: "Wheel Shine" },
+            { id: "ext_2", title: "Body Shine" },
+            { id: "ext_3", title: "Both" },
+          ]);
+          session.step = 1.1;
+        } else if (button_id === "service_2") {
+          await sendButtons(phone_number, "Choose add-ons for Interior Detailing:", [
+            { id: "int_1", title: "AC Vents" },
+            { id: "int_2", title: "Rug Cleaning" },
+            { id: "int_3", title: "Seat Cleaning" },
+            { id: "int_4", title: "All of them" },
+          ]);
+          session.step = 1.2;
+        } else {
+          session.data.addon = "None";
+          const slots = getTimeSlots();
           await sendButtons(phone_number, "Select a preferred time slot:", [
-            { id: "slot_1", title: slots1[0] },
-            { id: "slot_2", title: slots1[1] },
-            { id: "slot_3", title: slots1[2] },
+            { id: "slot_1", title: slots[0] },
+            { id: "slot_2", title: slots[1] },
+            { id: "slot_3", title: slots[2] },
           ]);
           session.step = 3;
-          break;
-  
-        case 1.2: // Add-ons for Interior Detailing
-          if (!["int_1", "int_2", "int_3", "int_4"].includes(button_id)) {
-            await sendText(phone_number, "❌ Invalid option. Please tap a button.");
-            return res.sendStatus(200);
-          }
-  
-          session.data.addon = button_id;
-          const slots2 = getTimeSlots();
-          await sendButtons(phone_number, "Select a preferred time slot:", [
-            { id: "slot_1", title: slots2[0] },
-            { id: "slot_2", title: slots2[1] },
-            { id: "slot_3", title: slots2[2] },
-          ]);
-          session.step = 3;
-          break;  
+        }
+        break;
+
+      case 1.1:
+        if (!["ext_1", "ext_2", "ext_3"].includes(button_id)) {
+          await sendText(phone_number, "❌ Invalid option. Please tap a button.");
+          return res.sendStatus(200);
+        }
+
+        session.data.addon = button_id;
+        const slots1 = getTimeSlots();
+        await sendButtons(phone_number, "Select a preferred time slot:", [
+          { id: "slot_1", title: slots1[0] },
+          { id: "slot_2", title: slots1[1] },
+          { id: "slot_3", title: slots1[2] },
+        ]);
+        session.step = 3;
+        break;
+
+      case 1.2:
+        if (!["int_1", "int_2", "int_3", "int_4"].includes(button_id)) {
+          await sendText(phone_number, "❌ Invalid option. Please tap a button.");
+          return res.sendStatus(200);
+        }
+
+        session.data.addon = button_id;
+        const slots2 = getTimeSlots();
+        await sendButtons(phone_number, "Select a preferred time slot:", [
+          { id: "slot_1", title: slots2[0] },
+          { id: "slot_2", title: slots2[1] },
+          { id: "slot_3", title: slots2[2] },
+        ]);
+        session.step = 3;
+        break;
 
       default:
         await sendText(phone_number, "Say *Hi* to begin a new booking.");
