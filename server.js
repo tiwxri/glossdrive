@@ -99,9 +99,19 @@ app.get("/webhook", (req, res) => {
 });
 
 // Main webhook logic
+console.log(JSON.stringify(req.body, null, 2));
+
 app.post("/webhook", async (req, res) => {
   try {
-    const message = req.body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
+    const value = req.body?.entry?.[0]?.changes?.[0]?.value;
+    const message = value?.messages?.[0];
+    const status = value?.statuses?.[0];
+
+    if (status) {
+      // Just acknowledge status updates to prevent "unsupported" errors
+      return res.sendStatus(200);
+    }
+
     const phone_number = message?.from;
     const msg_type = message?.type;
 
