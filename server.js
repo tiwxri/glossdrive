@@ -1,20 +1,20 @@
-const express = require("express");
+const express = require('express');
+const { client } = require('./config/client');
+const webhookRoute = require('./routes/webhook');
 const sendGreeting = require("./utils/greetings"); // Import greeting
+
 const app = express();
+const PORT = process.env.PORT || 3000;
+
 app.use(express.json());
+app.use('/webhook', webhookRoute);
 
-app.post("/webhook", async (req, res) => {
-  const entry = req.body.entry?.[0];
-  const changes = entry?.changes?.[0];
-  const message = changes?.value?.messages?.[0];
-  const phoneNumber = message?.from;
-
-  if (message && message.type === "text") {
-    await sendGreeting(phoneNumber);
-  }
-
-  res.sendStatus(200);
+client.on('ready', () => {
+  console.log('✅ WhatsApp client is ready!');
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+client.initialize();
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
