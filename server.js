@@ -94,11 +94,7 @@ app.post("/webhook", async (req, res) => {
                     type: "reply",
                     reply: { id: "service_3", title: "🧽 Full Body Cleaning" },
                   },
-                  {
-                    type: "reply",
-                    reply: { id: "service_4", title: "📦 Monthly Subscription" },
-                  },
-                ],
+                ],                
               },
             },
           },
