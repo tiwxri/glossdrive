@@ -107,21 +107,33 @@ app.post("/webhook", async (req, res) => {
 
     if (!message || !phone_number) return res.sendStatus(200);
 
-    let msg_body = "";
-    let button_id = "";
+    const session = sessions[phone_number] || { step: 0, data: {} };
+    sessions[phone_number] = session;
+
+    // Helper: Get greeting based on IST
+    function getGreeting() {
+      const istTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+      const hour = istTime.getHours();
+      if (hour < 12) return "Good Morning";
+      if (hour < 17) return "Good Afternoon";
+      return "Good Evening";
+    }
+
+    // Helper: Dummy time slot function
+    function getTimeSlots() {
+      return ["10:00 AM", "12:00 PM", "03:00 PM"];
+    }
+
+    let userInput = "";
+    let buttonId = "";
 
     if (msg_type === "button") {
-      msg_body = message.interactive?.button_reply?.title?.toLowerCase();
-      button_id = message.interactive?.button_reply?.id;
+      buttonId = message.interactive?.button_reply?.id;
+      userInput = message.interactive?.button_reply?.title?.toLowerCase();
     } else if (msg_type === "text") {
-      msg_body = message.text?.body?.toLowerCase();
+      userInput = message.text?.body?.toLowerCase();
     }
 
-    if (!sessions[phone_number]) {
-      sessions[phone_number] = { step: 0, data: {} };
-    }
-
-    const session = sessions[phone_number];
     const greeting = getGreeting();
 
     switch (session.step) {
@@ -139,28 +151,28 @@ app.post("/webhook", async (req, res) => {
         break;
 
       case 1:
-        if (!["service_1", "service_2", "service_3"].includes(button_id)) {
+        if (!["service_1", "service_2", "service_3"].includes(buttonId)) {
           await sendText(phone_number, "❌ Invalid option. Please tap a button.");
           return res.sendStatus(200);
         }
 
-        session.data.service = button_id;
+        session.data.service = buttonId;
 
-        if (button_id === "service_1") {
+        if (buttonId === "service_1") {
           await sendButtons(phone_number, "Choose add-ons for Exterior Wash:", [
             { id: "ext_1", title: "Wheel Shine" },
             { id: "ext_2", title: "Body Shine" },
             { id: "ext_3", title: "Both" },
           ]);
-          session.step = 1.1;
-        } else if (button_id === "service_2") {
+          session.step = 2;
+        } else if (buttonId === "service_2") {
           await sendButtons(phone_number, "Choose add-ons for Interior Detailing:", [
             { id: "int_1", title: "AC Vents" },
             { id: "int_2", title: "Rug Cleaning" },
             { id: "int_3", title: "Seat Cleaning" },
             { id: "int_4", title: "All of them" },
           ]);
-          session.step = 1.2;
+          session.step = 2;
         } else {
           session.data.addon = "None";
           const slots = getTimeSlots();
@@ -173,40 +185,43 @@ app.post("/webhook", async (req, res) => {
         }
         break;
 
-      case 1.1:
-        if (!["ext_1", "ext_2", "ext_3"].includes(button_id)) {
+      case 2:
+        if (
+          !["ext_1", "ext_2", "ext_3", "int_1", "int_2", "int_3", "int_4"].includes(buttonId)
+        ) {
           await sendText(phone_number, "❌ Invalid option. Please tap a button.");
           return res.sendStatus(200);
         }
 
-        session.data.addon = button_id;
-        const slots1 = getTimeSlots();
+        session.data.addon = buttonId;
+        const slots = getTimeSlots();
         await sendButtons(phone_number, "Select a preferred time slot:", [
-          { id: "slot_1", title: slots1[0] },
-          { id: "slot_2", title: slots1[1] },
-          { id: "slot_3", title: slots1[2] },
+          { id: "slot_1", title: slots[0] },
+          { id: "slot_2", title: slots[1] },
+          { id: "slot_3", title: slots[2] },
         ]);
         session.step = 3;
         break;
 
-      case 1.2:
-        if (!["int_1", "int_2", "int_3", "int_4"].includes(button_id)) {
-          await sendText(phone_number, "❌ Invalid option. Please tap a button.");
+      case 3:
+        if (!["slot_1", "slot_2", "slot_3"].includes(buttonId)) {
+          await sendText(phone_number, "❌ Invalid time slot. Please tap a button.");
           return res.sendStatus(200);
         }
 
-        session.data.addon = button_id;
-        const slots2 = getTimeSlots();
-        await sendButtons(phone_number, "Select a preferred time slot:", [
-          { id: "slot_1", title: slots2[0] },
-          { id: "slot_2", title: slots2[1] },
-          { id: "slot_3", title: slots2[2] },
-        ]);
-        session.step = 3;
+        const selectedSlot = getTimeSlots()[parseInt(buttonId.split("_")[1]) - 1];
+        session.data.slot = selectedSlot;
+
+        await sendText(
+          phone_number,
+          `✅ Booking confirmed!\n\nService: ${session.data.service}\nAdd-on: ${session.data.addon}\nTime Slot: ${session.data.slot}\n\nSee you soon! 🧼🚗`
+        );
+        session.step = 4;
         break;
 
       default:
-        await sendText(phone_number, "Say *Hi* to begin a new booking.");
+        await sendText(phone_number, "Type *Hi* to start a new booking.");
+        session.step = 0;
     }
 
     res.sendStatus(200);
@@ -215,6 +230,7 @@ app.post("/webhook", async (req, res) => {
     res.sendStatus(500);
   }
 });
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("🚀 Bot running on port " + PORT));
