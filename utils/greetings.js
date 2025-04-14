@@ -1,13 +1,9 @@
+// utils/greetings.js
 function getGreetingMessage() {
-    const currentHour = new Date().getHours();
-  
-    if (currentHour < 12) {
-      return 'Good morning';
-    } else if (currentHour < 18) {
-      return 'Good afternoon';
-    } else {
-      return 'Good evening';
-    }
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
   }
   
   module.exports = { getGreetingMessage };
