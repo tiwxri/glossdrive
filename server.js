@@ -14,13 +14,78 @@ app.use(
 
 const sessions = {};
 
-// Verification Route
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning ☀️";
+  else if (hour < 18) return "Good afternoon 🌞";
+  else return "Good evening 🌙";
+};
+
+const getTimeSlots = () => {
+  const now = new Date();
+  const hour = now.getHours();
+  const slots = [];
+
+  for (let i = 1; i <= 3; i++) {
+    const start = hour + i;
+    const end = start + 1;
+    if (end <= 23) {
+      slots.push(`${start}:00 - ${end}:00`);
+    }
+  }
+  return slots;
+};
+
+const sendText = async (to, body) => {
+  return axios.post(
+    `https://graph.facebook.com/v18.0/${process.env.PHONE_NUMBER_ID}/messages`,
+    {
+      messaging_product: "whatsapp",
+      to,
+      text: { body },
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+};
+
+const sendButtons = async (to, bodyText, buttons) => {
+  return axios.post(
+    `https://graph.facebook.com/v18.0/${process.env.PHONE_NUMBER_ID}/messages`,
+    {
+      messaging_product: "whatsapp",
+      to,
+      type: "interactive",
+      interactive: {
+        type: "button",
+        body: { text: bodyText },
+        action: {
+          buttons: buttons.map((b) => ({
+            type: "reply",
+            reply: { id: b.id, title: b.title },
+          })),
+        },
+      },
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+};
+
+// Webhook verification
 app.get("/webhook", (req, res) => {
   const verify_token = process.env.VERIFY_TOKEN;
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
-
   if (mode && token && mode === "subscribe" && token === verify_token) {
     return res.status(200).send(challenge);
   } else {
@@ -28,18 +93,15 @@ app.get("/webhook", (req, res) => {
   }
 });
 
-// WhatsApp Webhook Receiver
+// Main webhook logic
 app.post("/webhook", async (req, res) => {
   try {
-    const entry = req.body.entry?.[0];
-    const changes = entry?.changes?.[0];
-    const message = changes?.value?.messages?.[0];
+    const message = req.body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
     const phone_number = message?.from;
     const msg_type = message?.type;
 
     if (!message || !phone_number) return res.sendStatus(200);
 
-    // 🔍 Parse message body and button replies
     let msg_body = "";
     let button_id = "";
 
@@ -50,125 +112,128 @@ app.post("/webhook", async (req, res) => {
       msg_body = message.text.body?.toLowerCase();
     }
 
-    console.log("Incoming message:", msg_body, "Button ID:", button_id);
-
-    // Session management
     if (!sessions[phone_number]) {
       sessions[phone_number] = { step: 0, data: {} };
     }
 
     const session = sessions[phone_number];
-    let reply = "";
-
-    // Handle greeting
-    if (["hi", "hey", "hello"].includes(msg_body)) {
-      session.step = 0;
-    }
+    const greeting = getGreeting();
 
     switch (session.step) {
       case 0:
-        // Send interactive buttons
-        await axios.post(
-          `https://graph.facebook.com/v18.0/${process.env.PHONE_NUMBER_ID}/messages`,
-          {
-            messaging_product: "whatsapp",
-            to: phone_number,
-            type: "interactive",
-            interactive: {
-              type: "button",
-              body: {
-                text:
-                  "Hi there! 👋 Welcome to *10Min Car Clean* — your car's best friend! 🚗✨\nPlease choose a service:",
-              },
-              action: {
-                buttons: [
-                  {
-                    type: "reply",
-                    reply: { id: "service_1", title: "🚘 Exterior Wash" },
-                  },
-                  {
-                    type: "reply",
-                    reply: { id: "service_2", title: "🧼 Interior Detailing" },
-                  },
-                  {
-                    type: "reply",
-                    reply: { id: "service_3", title: "🧽 Full Body Cleaning" },
-                  },
-                ],                
-              },
-            },
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-              "Content-Type": "application/json",
-            },
-          }
+        await sendText(
+          phone_number,
+          `${greeting} 👋 Welcome to *10Min Car Clean*! 🚗✨`
         );
+        await sendButtons(phone_number, "Please choose a service:", [
+          { id: "service_1", title: "🚘 Exterior Wash" },
+          { id: "service_2", title: "🧼 Interior Detailing" },
+          { id: "service_3", title: "🧽 Full Body Cleaning" },
+        ]);
         session.step = 1;
         break;
 
       case 1:
-        const services = {
-          service_1: "Exterior Wash",
-          service_2: "Interior Detailing",
-          service_3: "Full Body Cleaning",
-          service_4: "Monthly Subscription",
-        };
-
-        const selected = services[button_id];
-
-        if (!selected) {
-          reply = "❌ Invalid selection. Please tap one of the service buttons.";
-          break;
+        if (!["service_1", "service_2", "service_3"].includes(button_id)) {
+          await sendText(phone_number, "❌ Invalid option. Please tap a button.");
+          return res.sendStatus(200);
         }
 
-        session.data.service = selected;
+        session.data.service = button_id;
+
+        if (button_id === "service_1") {
+          await sendButtons(phone_number, "Choose add-ons:", [
+            { id: "ext_1", title: "Wheel Shine" },
+            { id: "ext_2", title: "Body Shine" },
+            { id: "ext_3", title: "Both" },
+          ]);
+        } else if (button_id === "service_2") {
+          await sendButtons(phone_number, "Choose add-ons:", [
+            { id: "int_1", title: "AC Vents" },
+            { id: "int_2", title: "Rug Cleaning" },
+            { id: "int_3", title: "Seat Cleaning" },
+            { id: "int_4", title: "All of them" },
+          ]);
+        } else {
+          session.step = 3;
+          const slots = getTimeSlots();
+          await sendButtons(phone_number, "Select a preferred time slot:", [
+            { id: "slot_1", title: slots[0] },
+            { id: "slot_2", title: slots[1] },
+            { id: "slot_3", title: slots[2] },
+          ]);
+        }
+
         session.step = 2;
-        reply = "Great choice! 🚀\nPlease tell us your *car company and model* (e.g., Honda City 2022).";
         break;
 
       case 2:
-        session.data.car_model = msg_body;
+        // Store addon
+        session.data.addon = button_id;
         session.step = 3;
-        reply = "Awesome. Now please *share your current location* 📍 or type your address.";
+
+        const timeSlots = getTimeSlots();
+        await sendButtons(phone_number, "Select a preferred time slot:", [
+          { id: "slot_1", title: timeSlots[0] },
+          { id: "slot_2", title: timeSlots[1] },
+          { id: "slot_3", title: timeSlots[2] },
+        ]);
         break;
 
       case 3:
-        session.data.user_location = msg_body;
+        session.data.slot = msg_body || button_id;
         session.step = 4;
-        reply = `Here's the payment link for *${session.data.service}* 💳:\nhttps://rzp.io/l/samplePaymentLink\nPlease complete the payment to confirm your booking.`;
+
+        let total = 0;
+        let serviceTitle = "";
+        if (session.data.service === "service_1") {
+          serviceTitle = "Exterior Wash";
+          total = 99 + 49;
+        } else if (session.data.service === "service_2") {
+          serviceTitle = "Interior Detailing";
+          total = 99 + 49;
+        } else if (session.data.service === "service_3") {
+          serviceTitle = "Full Body Cleaning";
+          total = 299;
+        }
+
+        await sendText(
+          phone_number,
+          `✅ Booking Summary:\n\n*Service:* ${serviceTitle}\n*Add-ons:* ${
+            session.data.addon || "None"
+          }\n*Time Slot:* ${session.data.slot}\n\n💰 *Total:* ₹${total}`
+        );
+
+        await sendButtons(phone_number, "How would you like to proceed?", [
+          { id: "pay_now", title: "💳 Proceed to Payment" },
+          { id: "new_booking", title: "🔁 Create New Booking" },
+        ]);
+        session.step = 5;
+        break;
+
+      case 5:
+        if (button_id === "pay_now") {
+          await sendText(
+            phone_number,
+            "Here's your payment link 💳: https://rzp.io/l/samplePaymentLink"
+          );
+          session.step = 6;
+        } else if (button_id === "new_booking") {
+          sessions[phone_number] = { step: 0, data: {} };
+          await sendText(phone_number, "🔁 Let's start over. Just say *Hi*.");
+        }
         break;
 
       default:
-        reply = "🙏 Thank you! We've received your request. To book again, type 'Hi'.";
-    }
-
-    // Only send if there's a text reply
-    if (reply) {
-      await axios.post(
-        `https://graph.facebook.com/v18.0/${process.env.PHONE_NUMBER_ID}/messages`,
-        {
-          messaging_product: "whatsapp",
-          to: phone_number,
-          text: { body: reply },
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+        await sendText(phone_number, "Say *Hi* to begin a new booking.");
     }
 
     res.sendStatus(200);
   } catch (error) {
-    console.error("Error in /webhook:", error.response?.data || error.message);
+    console.error("Error:", error.response?.data || error.message);
     res.sendStatus(500);
   }
 });
 
-// Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("🚀 Bot running on port " + PORT));
