@@ -1,20 +1,19 @@
+// server.js
+
 const express = require('express');
-const { client } = require('./config/client');
-const webhookRoute = require('./routes/webhook');
-const sendGreeting = require("./utils/greetings"); // Import greeting
+const bodyParser = require('body-parser');
+const webhookRoute = require('./routes/webhook');  // Import webhook route
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const port = process.env.PORT || 3000;
 
-app.use(express.json());
-app.use('/webhook', webhookRoute);
+// Middleware to parse incoming JSON requests
+app.use(bodyParser.json());
 
-client.on('ready', () => {
-  console.log('✅ WhatsApp client is ready!');
-});
+// Link the webhook route
+app.use('/api', webhookRoute);
 
-client.initialize();
-
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+// Start the server
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
