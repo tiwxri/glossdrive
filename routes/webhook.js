@@ -1,6 +1,6 @@
-const { getTimeBasedGreeting } = require('./utils/greetings');
-const { generateServiceButtons, generateAddonButtons } = require('./utils/buttons');
-const { getAvailableTimeSlots } = require('./utils/time');
+const greetings = require('../utils/greetings');
+const { generateServiceButtons, generateAddonButtons } = require('../utils/buttons');
+const { getAvailableTimeSlots } = require('../utils/time');
 
 const sessionStorage = {}; // Simple session management for now, replace with DB or Redis in production.
 
