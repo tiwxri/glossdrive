@@ -1,6 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const { handleMessageFlow, handlePostbackFlow } = require('./webhook');
+const { handleMessageFlow, handlePostbackFlow } = require('./routes/webhook');
 
 const app = express();
 
