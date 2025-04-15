@@ -1,21 +1,41 @@
 const express = require('express');
-const { sendMessage } = require('../services/messageSender');
-const { sendServiceOptions, handleServiceResponse } = require('../services/serviceHandler'); // New service handler
+const { handleMessage, handlePostback } = require('../services/whatsappServices');
+
 const router = express.Router();
 
-router.post('/', async (req, res) => {
-  const body = req.body;
-  const from = body.entry[0].changes[0].value.messages[0].from;
-  const text = body.entry[0].changes[0].value.messages[0].text.body.toLowerCase();
+// Handle webhook for messages
+router.post('/', (req, res) => {
+  const data = req.body;
 
-  if (text.includes('hi') || text.includes('hello')) {
-    await sendMessage(from, 'Hello! How can I help you today? Please choose a service:');
-    await sendServiceOptions(from);
+  if (data.object) {
+    if (data.entry && data.entry[0].changes && data.entry[0].changes[0].value.messages) {
+      const message = data.entry[0].changes[0].value.messages[0];
+      const phoneNumber = message.from; // Sender's phone number
+      const messageText = message.text.body; // Message text
+
+      handleMessage(phoneNumber, messageText); // Call appropriate function to handle the message
+    }
+    res.sendStatus(200);
   } else {
-    await handleServiceResponse(from, text); // Handle user responses for specific services
+    res.sendStatus(404);
   }
+});
 
-  res.sendStatus(200);
+// Handle postback (button click, etc.)
+router.post('/postback', (req, res) => {
+  const data = req.body;
+
+  if (data.object) {
+    if (data.entry && data.entry[0].changes && data.entry[0].changes[0].value.contacts) {
+      const phoneNumber = data.entry[0].changes[0].value.contacts[0].wa_id;
+      const postbackPayload = data.entry[0].changes[0].value.messages[0].interactive.button.reply.payload;
+
+      handlePostback(phoneNumber, postbackPayload); // Handle the postback (button selection)
+    }
+    res.sendStatus(200);
+  } else {
+    res.sendStatus(404);
+  }
 });
 
 module.exports = router;

@@ -1,50 +1,33 @@
-const { sendMessage } = require('./messageSender');
+const axios = require('axios');
 
-const sendServiceOptions = async (to) => {
-  const message = {
-    type: 'buttons',
-    text: 'Please select a service:',
-    buttons: [
-      { title: 'Exterior Wash', payload: 'EXTERIOR_WASH' },
-      { title: 'Interior Wash', payload: 'INTERIOR_WASH' },
-      { title: 'Full Car Cleaning', payload: 'FULL_CLEANING' }
-    ]
-  };
+const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL;
+const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
 
-  await sendMessage(to, message);
-};
-
-const handleServiceResponse = async (to, text) => {
-  switch (text) {
-    case 'exterior wash':
-      await sendMessage(to, 'You selected Exterior Wash. Please choose additional options:');
-      await sendExteriorOptions(to);
-      break;
-    case 'interior wash':
-      await sendMessage(to, 'You selected Interior Wash. We will proceed with that.');
-      break;
-    case 'full cleaning':
-      await sendMessage(to, 'You selected Full Car Cleaning. We will proceed with that.');
-      break;
-    default:
-      await sendMessage(to, 'Sorry, I didn\'t understand that. Please select one of the services.');
-      await sendServiceOptions(to);
-      break;
+async function sendMessage(to, message) {
+  try {
+    const response = await axios.post(
+      WHATSAPP_API_URL,
+      {
+        messaging_product: 'whatsapp',
+        to: to,
+        type: message.type || 'text',
+        text: message.body ? { body: message.body } : undefined,
+        interactive: message.buttons ? {
+          type: 'button',
+          body: message.text,
+          buttons: message.buttons
+        } : undefined,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${ACCESS_TOKEN}`,
+        },
+      }
+    );
+    console.log('Message sent:', response.data);
+  } catch (error) {
+    console.error('Error sending message:', error);
   }
-};
+}
 
-const sendExteriorOptions = async (to) => {
-  const message = {
-    type: 'buttons',
-    text: 'Choose additional options for Exterior Wash:',
-    buttons: [
-      { title: 'Window Shine', payload: 'WINDOW_SHINE' },
-      { title: 'Wheel Shine', payload: 'WHEEL_SHINE' },
-      { title: 'None', payload: 'NONE' }
-    ]
-  };
-
-  await sendMessage(to, message);
-};
-
-module.exports = { sendServiceOptions, handleServiceResponse };
+module.exports = { sendMessage };

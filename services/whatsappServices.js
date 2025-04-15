@@ -1,35 +1,38 @@
-const { getGreetingMessage } = require('../utils/greetings');
-const { sendReply } = require('./messageSender');  // This can be another file that handles sending messages to the API.
+const { sendMessage } = require('./messageSender'); // Ensure sendMessage is exported correctly from messageSender.js
 
-async function handleIncomingMessage(userId, message) {
-  const msg = message.body.trim().toLowerCase();
-  
-  if (msg === 'hi' || msg === 'hello') {
-    const greeting = getGreetingMessage();
-    const replyMessage = `${greeting} 👋\n\nHow can I assist you today?\n\nPlease select an option:\n1. Exterior Wash\n2. Interior Wash\n3. Full Car Cleaning`;
-    
-    // Send greeting and options
-    await sendReply(userId, replyMessage);
-  }
+async function handleMessage(phoneNumber, messageText) {
+  if (messageText.toLowerCase() === 'hi' || messageText.toLowerCase() === 'hello') {
+    await sendMessage(phoneNumber, { type: 'text', body: 'Hi! How can I help you today?' });
 
-  // Handle selections after the user chooses an option
-  else if (msg === '1' || msg === 'exterior wash') {
-    const exteriorOptions = `You selected Exterior Wash. Please choose one of the following options:\n\n1. Window Shine\n2. Wheel Shine\n3. None`;
-    await sendReply(userId, exteriorOptions);
-  }
-  else if (msg === '2' || msg === 'interior wash') {
-    const interiorOptions = `You selected Interior Wash. Would you like any add-ons? Please choose one of the following:\n\n1. Vacuum\n2. Dusting\n3. None`;
-    await sendReply(userId, interiorOptions);
-  }
-  else if (msg === '3' || msg === 'full car cleaning') {
-    const fullCleaningOptions = `You selected Full Car Cleaning. Do you need any additional services?\n\n1. Window Shine\n2. Wheel Shine\n3. None`;
-    await sendReply(userId, fullCleaningOptions);
-  }
-  else {
-    // Default reply if the message doesn't match any known commands
-    const defaultMessage = 'Sorry, I didn\'t understand that. Please reply with one of the options:\n1. Exterior Wash\n2. Interior Wash\n3. Full Car Cleaning';
-    await sendReply(userId, defaultMessage);
+    // Send the service options after greeting
+    const buttonsMessage = {
+      type: 'buttons',
+      text: 'Please choose a service:',
+      buttons: [
+        { title: 'Exterior Wash', payload: 'EXTERIOR_WASH' },
+        { title: 'Interior Wash', payload: 'INTERIOR_WASH' },
+        { title: 'Full Car Cleaning', payload: 'FULL_CLEANING' }
+      ]
+    };
+
+    await sendMessage(phoneNumber, buttonsMessage);
   }
 }
 
-module.exports = { handleIncomingMessage };
+async function handlePostback(phoneNumber, postbackPayload) {
+  switch (postbackPayload) {
+    case 'EXTERIOR_WASH':
+      await sendMessage(phoneNumber, { type: 'text', body: 'You selected Exterior Wash. Would you like to add Window Shine or Wheel Shine?' });
+      break;
+    case 'INTERIOR_WASH':
+      await sendMessage(phoneNumber, { type: 'text', body: 'You selected Interior Wash. Would you like to add Window Shine or Wheel Shine?' });
+      break;
+    case 'FULL_CLEANING':
+      await sendMessage(phoneNumber, { type: 'text', body: 'You selected Full Car Cleaning. Would you like to add Window Shine or Wheel Shine?' });
+      break;
+    default:
+      await sendMessage(phoneNumber, { type: 'text', body: 'I did not understand that. Please try again.' });
+  }
+}
+
+module.exports = { handleMessage, handlePostback };
