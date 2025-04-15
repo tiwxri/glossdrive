@@ -1,17 +1,17 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const dotenv = require('dotenv');
-const webhookRoutes = require('./routes/webhook');
+const express = require("express");
+const bodyParser = require("body-parser");
+const webhookRoute = require("./routes/webhook");
 
-dotenv.config();
 const app = express();
+const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
+app.use("/webhook", webhookRoute);
 
-// Route for WhatsApp Webhook
-app.use('/webhook', webhookRoutes);
+app.get("/", (req, res) => {
+  res.send("GlossDrive WhatsApp Bot is running 🚗💨");
+});
 
-const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server is running on port ${PORT}`);
+  console.log(`Server is listening on port ${PORT}`);
 });
