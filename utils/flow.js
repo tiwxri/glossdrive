@@ -1,6 +1,6 @@
 // Manage conversation flow and transitions
 
-const getTimeBasedGreeting = require('./time');
+const { getTimeBasedGreeting } = require('./greetings');
 
 const userSessions = {}; // store temporary user data like name, selected options, etc.
 
