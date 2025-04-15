@@ -1,36 +1,46 @@
-const express = require('express');
-const { handleMessage, handlePostback } = require('../services/whatsappServices');
+// routes/webhook.js
 
+const express = require("express");
 const router = express.Router();
+const axios = require("axios");
+const { getGreeting, getTimeSlots } = require("../utils/time");
+const { generateReply } = require("../utils/flow");
 
-// Handle incoming webhook for messages
-router.post('/', (req, res) => {
-  const data = req.body;
+require("dotenv").config();
 
-  if (data.object) {
-    if (data.entry && data.entry[0].changes && data.entry[0].changes[0].value.messages) {
-      const message = data.entry[0].changes[0].value.messages[0];
-      const phoneNumber = message.from; // Sender's phone number
-      const messageText = message.text.body; // Message text
+router.post("/", async (req, res) => {
+  const body = req.body;
+  if (body.object) {
+    const entry = body.entry?.[0]?.changes?.[0]?.value;
+    const phoneNumberId = entry?.metadata?.phone_number_id;
+    const messages = entry?.messages;
 
-      handleMessage(phoneNumber, messageText); // Handle the message
-    }
-    res.sendStatus(200);
-  } else {
-    res.sendStatus(404);
-  }
-});
+    if (messages && messages[0]) {
+      const from = messages[0].from;
+      const msgBody = messages[0].text?.body || "";
 
-// Handle incoming postback (button clicks)
-router.post('/postback', (req, res) => {
-  const data = req.body;
+      const userContext = {}; // Could be stored in DB or cache in real app
 
-  if (data.object) {
-    if (data.entry && data.entry[0].changes && data.entry[0].changes[0].value.messages) {
-      const phoneNumber = data.entry[0].changes[0].value.contacts[0].wa_id;
-      const postbackPayload = data.entry[0].changes[0].value.messages[0].interactive.button.reply.payload;
+      const reply = await generateReply(msgBody, userContext);
 
-      handlePostback(phoneNumber, postbackPayload); // Handle the postback
+      try {
+        await axios({
+          method: "POST",
+          url: `https://graph.facebook.com/v17.0/${phoneNumberId}/messages`,
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+          },
+          data: {
+            messaging_product: "whatsapp",
+            to: from,
+            type: reply.type,
+            [reply.type]: reply.message,
+          },
+        });
+      } catch (error) {
+        console.error("Error sending message:", error.response?.data || error);
+      }
     }
     res.sendStatus(200);
   } else {
