@@ -1,14 +1,14 @@
-exports.getGreetingMessage = () => {
-    const indiaTime = new Date().toLocaleString('en-US', {
-      timeZone: 'Asia/Kolkata',
-      hour: '2-digit',
-      hour12: true,
-    });
+// Get a greeting message based on the current time in IST
+function getGreetingMessage() {
+    const currentHour = new Date().getHours();
+    
+    if (currentHour < 12) {
+      return 'Good morning';
+    } else if (currentHour < 18) {
+      return 'Good afternoon';
+    } else {
+      return 'Good evening';
+    }
+  }
   
-    const hour = parseInt(indiaTime);
-    if (hour >= 5 && hour < 12) return 'Good morning';
-    if (hour >= 12 && hour < 17) return 'Good afternoon';
-    if (hour >= 17 && hour < 22) return 'Good evening';
-    return 'Hello';
-  };
-  
+  module.exports = { getGreetingMessage };  

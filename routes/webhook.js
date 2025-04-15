@@ -1,26 +1,28 @@
 const express = require('express');
 const router = express.Router();
-const whatsappServices = require('../services/whatsappServices');
+const { handleIncomingMessage } = require('../services/whatsappServices'); // Importing the function to handle messages
+const { getGreetingMessage } = require('../utils/greetings'); // Importing greeting logic
 
-// Webhook verification (for Meta)
-router.get('/', (req, res) => {
-  const verify_token = 'glossdrive_token';
-  const mode = req.query['hub.mode'];
-  const token = req.query['hub.verify_token'];
-  const challenge = req.query['hub.challenge'];
-
-  if (mode === 'subscribe' && token === verify_token) {
-    console.log('✅ Webhook verified!');
-    res.status(200).send(challenge);
-  } else {
-    res.sendStatus(403);
-  }
-});
-
-// Handle incoming messages
+// Define the route to handle incoming messages from the webhook
 router.post('/', async (req, res) => {
-  await whatsappServices.handleIncoming(req.body);
-  res.sendStatus(200);
+  const message = req.body;  // Incoming message from the user
+
+  try {
+    // Check if the message is coming from a valid user
+    if (message && message.from) {
+      const userId = message.from; // User's phone number
+
+      // Greet the user
+      await handleIncomingMessage(userId, message);
+      
+      res.status(200).send('Message received and processing.');
+    } else {
+      res.status(400).send('No message or sender found.');
+    }
+  } catch (error) {
+    console.error('Error handling message:', error);
+    res.status(500).send('Internal Server Error');
+  }
 });
 
 module.exports = router;
