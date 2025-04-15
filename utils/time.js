@@ -1,4 +1,3 @@
-// Time-based logic (e.g., determine available time slots)
 function getAvailableTimeSlots() {
     const timeSlots = [];
     const currentHour = new Date().getHours();

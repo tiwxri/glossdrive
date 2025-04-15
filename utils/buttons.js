@@ -1,5 +1,4 @@
- // Manage button structures and content (with pricing)
- function generateServiceButtons() {
+function generateServiceButtons() {
     return [
         { label: 'Exterior Car Cleaning (₹500)', value: 'Exterior Car Cleaning' },
         { label: 'Interior Car Cleaning (₹400)', value: 'Interior Car Cleaning' },

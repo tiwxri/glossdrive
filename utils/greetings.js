@@ -1,10 +1,10 @@
-// Get a greeting message based on the current time in IST
 function getTimeBasedGreeting() {
-    const currentHour = new Date().getHours();
-    if (currentHour < 12) return "Good morning";
-    if (currentHour < 18) return "Good afternoon";
-    return "Good evening";
-  }
+    const now = new Date();
+    const hour = now.getHours();
   
-  module.exports = { getTimeBasedGreeting };
-  
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+}
+
+module.exports = { getTimeBasedGreeting };
