@@ -10,6 +10,7 @@ require("dotenv").config();
 
 router.post("/", async (req, res) => {
   const body = req.body;
+
   if (body.object) {
     const entry = body.entry?.[0]?.changes?.[0]?.value;
     const phoneNumberId = entry?.metadata?.phone_number_id;
@@ -19,9 +20,12 @@ router.post("/", async (req, res) => {
       const from = messages[0].from;
       const msgBody = messages[0].text?.body || "";
 
-      const userContext = {}; // Could be stored in DB or cache in real app
+      // Simulate a basic in-memory context (for testing)
+      const userContext = global.userContext || {};
+      if (!userContext[from]) userContext[from] = {};
+      global.userContext = userContext;
 
-      const reply = await generateReply(msgBody, userContext);
+      const reply = await generateReply(msgBody, userContext[from]);
 
       try {
         await axios({
@@ -39,9 +43,10 @@ router.post("/", async (req, res) => {
           },
         });
       } catch (error) {
-        console.error("Error sending message:", error.response?.data || error);
+        console.error("❌ Error sending message:", error.response?.data || error);
       }
     }
+
     res.sendStatus(200);
   } else {
     res.sendStatus(404);

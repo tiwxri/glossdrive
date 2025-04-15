@@ -168,7 +168,9 @@ const askTimeSlots = (senderId, sendMessage) => {
   ]);
 };
 
+// Export the relevant functions
 module.exports = {
   handleMessageFlow,
   handlePostbackFlow,
+  generateReply: handleMessageFlow,  // exporting as generateReply
 };
