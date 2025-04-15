@@ -4,7 +4,7 @@ const { getAvailableTimeSlots } = require('../utils/time');
 const express = require('express');
 const router = express.Router();
 
-const sessionStorage = {}; // Simple session management for now, replace with DB or Redis in production.
+const db = require('../path/to/your/firebase-init-file'); // Firebase Firestore instance
 
 const generateOrderId = () => `ORD-${Math.floor(Math.random() * 1000000)}`;
 
@@ -20,27 +20,34 @@ const addons = {
   none: 0,
 };
 
-const handleMessageFlow = (senderId, message, sendMessage) => {
-  const session = sessionStorage[senderId] || { stage: 'greet' };
+const getSessionRef = (senderId) => db.collection('sessions').doc(senderId);
+
+const handleMessageFlow = async (senderId, message, sendMessage) => {
+  const sessionRef = getSessionRef(senderId);
+  let sessionSnap = await sessionRef.get();
+  let session = sessionSnap.exists ? sessionSnap.data() : { stage: 'greet' };
+
   const text = message?.text?.trim() || '';
 
   switch (session.stage) {
-    case 'greet':
+    case 'greet': {
       const greeting = getTimeBasedGreeting();
       sendMessage(senderId, `${greeting}! Welcome to GlossDrive 🚗✨\nCan I know your name?`);
       session.stage = 'get_name';
       break;
+    }
 
-    case 'get_name':
+    case 'get_name': {
       session.name = text;
       session.stage = 'get_location';
       sendMessage(senderId, `Hi ${text}, where do you stay?`, [
         { type: 'postback', title: 'U Block DLF phase 3', payload: 'LOCATION_U_BLOCK' },
-        { type: 'postback', title: 'Others', payload: 'LOCATION_OTHERS' }
+        { type: 'postback', title: 'Others', payload: 'LOCATION_OTHERS' },
       ]);
       break;
+    }
 
-    case 'get_service':
+    case 'get_service': {
       session.stage = 'addons';
       if (text.includes('Exterior')) {
         session.service = 'exterior';
@@ -59,38 +66,48 @@ const handleMessageFlow = (senderId, message, sendMessage) => {
         sendMessage(senderId, 'Please choose a valid service option: Exterior, Interior, or Full.');
       }
       break;
+    }
 
-    case 'time':
+    case 'time': {
       session.time = text;
       session.stage = 'confirm';
       sendMessage(senderId, `Your total is ₹${session.total}. Proceed to payment or start again?`, [
         { type: 'postback', title: 'Pay Now', payload: 'PAY_NOW' },
-        { type: 'postback', title: 'Start Over', payload: 'RESTART' }
+        { type: 'postback', title: 'Start Over', payload: 'RESTART' },
       ]);
       break;
+    }
 
-    case 'confirm':
+    case 'confirm': {
       if (text.includes('Pay')) {
         const orderId = generateOrderId();
-        sendMessage(senderId, `Payment confirmed ✅\nOrder ID: ${orderId}\nThank you ${session.name}! We'll see you soon at your location.`);
-        delete sessionStorage[senderId];
+        sendMessage(
+          senderId,
+          `Payment confirmed ✅\nOrder ID: ${orderId}\nThank you ${session.name}! We'll see you soon at your location.`
+        );
+        await sessionRef.delete();
+        return;
       } else {
         session.stage = 'get_service';
         sendServiceOptions(senderId, sendMessage);
       }
       break;
+    }
 
-    default:
+    default: {
       sendMessage(senderId, 'Let’s start over.');
       session.stage = 'greet';
       break;
+    }
   }
 
-  sessionStorage[senderId] = session;
+  await sessionRef.set(session);
 };
 
-const handlePostbackFlow = (senderId, payload, sendMessage) => {
-  const session = sessionStorage[senderId] || {};
+const handlePostbackFlow = async (senderId, payload, sendMessage) => {
+  const sessionRef = getSessionRef(senderId);
+  let sessionSnap = await sessionRef.get();
+  let session = sessionSnap.exists ? sessionSnap.data() : {};
 
   switch (payload) {
     case 'LOCATION_U_BLOCK':
@@ -100,8 +117,8 @@ const handlePostbackFlow = (senderId, payload, sendMessage) => {
 
     case 'LOCATION_OTHERS':
       sendMessage(senderId, 'Sorry! We are currently not servicing your area. 😔');
-      delete sessionStorage[senderId];
-      break;
+      await sessionRef.delete();
+      return;
 
     case 'ADDON_AC_VENT':
       session.total += addons.acVent;
@@ -120,11 +137,15 @@ const handlePostbackFlow = (senderId, payload, sendMessage) => {
       askTimeSlots(senderId, sendMessage);
       break;
 
-    case 'PAY_NOW':
+    case 'PAY_NOW': {
       const orderId = generateOrderId();
-      sendMessage(senderId, `Payment confirmed ✅\nOrder ID: ${orderId}\nThank you ${session.name}! We'll see you soon at your location.`);
-      delete sessionStorage[senderId];
-      break;
+      sendMessage(
+        senderId,
+        `Payment confirmed ✅\nOrder ID: ${orderId}\nThank you ${session.name}! We'll see you soon at your location.`
+      );
+      await sessionRef.delete();
+      return;
+    }
 
     case 'RESTART':
       session.stage = 'get_service';
@@ -137,7 +158,7 @@ const handlePostbackFlow = (senderId, payload, sendMessage) => {
       break;
   }
 
-  sessionStorage[senderId] = session;
+  await sessionRef.set(session);
 };
 
 const sendServiceOptions = (senderId, sendMessage) => {
@@ -153,5 +174,8 @@ const askTimeSlots = (senderId, sendMessage) => {
   })));
 };
 
-// ✅ Export handlers
-module.exports = { handleMessageFlow, handlePostbackFlow, generateReply: handleMessageFlow };
+module.exports = {
+  handleMessageFlow,
+  handlePostbackFlow,
+  generateReply: handleMessageFlow,
+};
