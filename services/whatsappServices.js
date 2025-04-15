@@ -1,62 +1,44 @@
-
-// File: services/whatsappServices.js
-const axios = require("axios");
-const { getGreetingMessage, getServiceMenu } = require("../utils/greetings");
+const axios = require('axios');
+const { getGreetingMessage } = require('../utils/greetings');
+const { getServiceButtons } = require('../utils/buttons');
 
 const token = process.env.WHATSAPP_TOKEN;
-const phoneNumberId = process.env.PHONE_NUMBER_ID;
+const phone_number_id = process.env.PHONE_NUMBER_ID;
 
-async function handleMessage(message) {
-  const from = message.from;
-  const msgBody = message.text?.body?.toLowerCase();
+exports.handleIncoming = async (body) => {
+  const entry = body.entry?.[0];
+  const changes = entry?.changes?.[0];
+  const message = changes?.value?.messages?.[0];
 
-  if (msgBody === "hi" || msgBody === "hello") {
-    await sendTextMessage(from, getGreetingMessage());
-    await sendServiceMenu(from);
-  }
-}
+  if (message && message.type === 'text') {
+    const from = message.from;
 
-async function sendTextMessage(to, text) {
-  try {
-    await axios.post(
-      `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`,
-      {
-        messaging_product: "whatsapp",
-        to,
-        text: { body: text },
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+    const greeting = getGreetingMessage();
+    const buttons = getServiceButtons();
+
+    try {
+      await axios.post(
+        `https://graph.facebook.com/v18.0/${phone_number_id}/messages`,
+        {
+          messaging_product: 'whatsapp',
+          to: from,
+          type: 'interactive',
+          interactive: {
+            type: 'button',
+            body: { text: `${greeting} 👋\n\nPlease choose a service:` },
+            action: { buttons },
+          },
         },
-      }
-    );
-  } catch (err) {
-    console.error("Error sending text message:", err.response?.data || err);
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      console.log('✅ Message sent');
+    } catch (error) {
+      console.error('❌ Error sending message:', error.response?.data || error.message);
+    }
   }
-}
-
-async function sendServiceMenu(to) {
-  try {
-    await axios.post(
-      `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`,
-      {
-        messaging_product: "whatsapp",
-        to,
-        type: "interactive",
-        interactive: getServiceMenu(),
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-  } catch (err) {
-    console.error("Error sending menu:", err.response?.data || err);
-  }
-}
-
-module.exports = { handleMessage };
+};

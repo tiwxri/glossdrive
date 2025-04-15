@@ -1,36 +1,26 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const { handleMessage } = require("../services/whatsappServices");
+const whatsappServices = require('../services/whatsappServices');
 
-router.get("/", (req, res) => {
-  const verifyToken = process.env.VERIFY_TOKEN || "glossdrive_verify";
+// Webhook verification (for Meta)
+router.get('/', (req, res) => {
+  const verify_token = 'glossdrive_token';
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
 
-  const mode = req.query["hub.mode"];
-  const token = req.query["hub.verify_token"];
-  const challenge = req.query["hub.challenge"];
-
-  if (mode && token === verifyToken) {
+  if (mode === 'subscribe' && token === verify_token) {
+    console.log('✅ Webhook verified!');
     res.status(200).send(challenge);
   } else {
     res.sendStatus(403);
   }
 });
 
-router.post("/", async (req, res) => {
-  const body = req.body;
-
-  if (body.object) {
-    const entry = body.entry?.[0];
-    const change = entry?.changes?.[0];
-    const message = change?.value?.messages?.[0];
-
-    if (message) {
-      await handleMessage(message);
-    }
-    res.sendStatus(200);
-  } else {
-    res.sendStatus(404);
-  }
+// Handle incoming messages
+router.post('/', async (req, res) => {
+  await whatsappServices.handleIncoming(req.body);
+  res.sendStatus(200);
 });
 
 module.exports = router;
