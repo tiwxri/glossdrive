@@ -13,3 +13,14 @@ exports.getServiceButtons = () => [
     },
   ];
   
+  exports.getServiceOptionsButtons = (service) => {
+    if (service === 'exterior wash') {
+      return [
+        { type: 'reply', reply: { id: 'window_shine', title: 'Window Shine' } },
+        { type: 'reply', reply: { id: 'wheel_shine', title: 'Wheel Shine' } },
+        { type: 'reply', reply: { id: 'preen_none', title: 'Preen None' } },
+      ];
+    }
+    return [];
+  };
+  
