@@ -1,4 +1,13 @@
-const greetings = require('../utils/greetings');
+// Add this to webhook.js near the top
+function getTimeBasedGreeting() {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    else if (hour < 18) return 'Good afternoon';
+    else return 'Good evening';
+  }
+
+  
+// const greetings = require('../utils/greetings');
 const { generateServiceButtons, generateAddonButtons } = require('../utils/buttons');
 const { getAvailableTimeSlots } = require('../utils/time');
 
