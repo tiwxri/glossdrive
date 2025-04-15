@@ -1,12 +1,18 @@
 const express = require('express');
 const app = express();
 
-// Body parser
-app.use(express.json({
-  verify: (req, res, buf) => {
-    req.rawBody = buf; // in case you need raw body for webhook verification
+// Apply JSON parser only to POST requests on /webhook
+app.use('/webhook', (req, res, next) => {
+  if (req.method === 'POST') {
+    express.json({
+      verify: (req, res, buf) => {
+        req.rawBody = buf;
+      }
+    })(req, res, next);
+  } else {
+    next(); // allow GET requests through without JSON parsing
   }
-}));
+});
 
 // Routes
 const webhookRoutes = require('./routes/webhook');
