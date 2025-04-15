@@ -1,26 +1,18 @@
-exports.getServiceButtons = () => [
-    {
-      type: 'reply',
-      reply: { id: 'exterior_wash', title: '🧽 Exterior Wash' },
-    },
-    {
-      type: 'reply',
-      reply: { id: 'interior_wash', title: '🧼 Interior Wash' },
-    },
-    {
-      type: 'reply',
-      reply: { id: 'full_cleaning', title: '🧴 Full Car Cleaning' },
-    },
-  ];
-  
-  exports.getServiceOptionsButtons = (service) => {
-    if (service === 'exterior wash') {
-      return [
-        { type: 'reply', reply: { id: 'window_shine', title: 'Window Shine' } },
-        { type: 'reply', reply: { id: 'wheel_shine', title: 'Wheel Shine' } },
-        { type: 'reply', reply: { id: 'preen_none', title: 'Preen None' } },
-      ];
-    }
-    return [];
-  };
-  
+ // Manage button structures and content (with pricing)
+ function generateServiceButtons() {
+    return [
+        { label: 'Exterior Car Cleaning (₹500)', value: 'Exterior Car Cleaning' },
+        { label: 'Interior Car Cleaning (₹400)', value: 'Interior Car Cleaning' },
+        { label: 'Whole Car Cleaning (₹800)', value: 'Whole Car Cleaning' },
+    ];
+}
+
+function generateAddonButtons() {
+    return [
+        { label: 'AC Vent Cleaning (₹150)', value: 'AC Vent Cleaning' },
+        { label: 'Wheel and Window Shine (₹200)', value: 'Wheel and Window Shine' },
+        { label: 'None', value: 'None' },
+    ];
+}
+
+module.exports = { generateServiceButtons, generateAddonButtons };

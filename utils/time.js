@@ -1,30 +1,19 @@
-const getGreeting = () => {
-    const now = new Date();
-    const istOffset = 330 * 60 * 1000; // IST = UTC + 5:30
-    const istTime = new Date(now.getTime() + istOffset);
-    const hours = istTime.getUTCHours();
-  
-    if (hours < 12) return 'Good Morning';
-    if (hours < 17) return 'Good Afternoon';
-    return 'Good Evening';
-  };
-  
-  const getNextTimeSlots = () => {
-    const now = new Date();
-    const istOffset = 330 * 60 * 1000;
-    const istTime = new Date(now.getTime() + istOffset);
-    let hour = istTime.getUTCHours() + 1; // Start from next hour
-  
+// Time-based logic (e.g., determine available time slots)
+function getAvailableTimeSlots() {
     const timeSlots = [];
-    for (let i = 0; i < 3; i++) {
-      const start = hour + i;
-      const end = start + 1;
-      if (start >= 22) break; // cutoff at 10PM
-      timeSlots.push(`${start}:00-${end}:00`);
+    const currentHour = new Date().getHours();
+
+    if (currentHour < 17) {
+        timeSlots.push({ label: '4-5PM', value: '4-5PM' });
+        timeSlots.push({ label: '5-6PM', value: '5-6PM' });
+        timeSlots.push({ label: '6-7PM', value: '6-7PM' });
+    } else {
+        timeSlots.push({ label: '10-11AM', value: '10-11AM' });
+        timeSlots.push({ label: '11-12PM', value: '11-12PM' });
+        timeSlots.push({ label: '12-1PM', value: '12-1PM' });
     }
-  
+
     return timeSlots;
-  };
-  
-  module.exports = { getGreeting, getNextTimeSlots };
-  
+}
+
+module.exports = { getAvailableTimeSlots };

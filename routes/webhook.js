@@ -1,4 +1,4 @@
-// routes/webhook.js
+// Webhook to receive messages from WhatsApp
 
 const express = require("express");
 const router = express.Router();

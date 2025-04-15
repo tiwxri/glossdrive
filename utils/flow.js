@@ -1,4 +1,4 @@
-// utils/flow.js
+// Manage conversation flow and transitions
 
 const getTimeBasedGreeting = require('./time');
 
