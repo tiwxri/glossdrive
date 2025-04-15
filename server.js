@@ -5,7 +5,7 @@ const webhookRoutes = require('./routes/webhook');
 require('dotenv').config();
 
 const app = express();
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '10mb' }));
 app.use('/webhook', webhookRoutes);
 
 const PORT = process.env.PORT || 3000;
