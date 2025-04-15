@@ -2,6 +2,7 @@ function getAvailableTimeSlots() {
     const timeSlots = [];
     const currentHour = new Date().getHours();
 
+    // Shows evening slots if it's earlier in the day, otherwise shows next day morning slots
     if (currentHour < 17) {
         timeSlots.push({ label: '4-5PM', value: '4-5PM' });
         timeSlots.push({ label: '5-6PM', value: '5-6PM' });
