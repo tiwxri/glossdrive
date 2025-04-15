@@ -3,7 +3,7 @@ const { handleMessage, handlePostback } = require('../services/whatsappServices'
 
 const router = express.Router();
 
-// Handle webhook for messages
+// Handle incoming webhook for messages
 router.post('/', (req, res) => {
   const data = req.body;
 
@@ -13,7 +13,7 @@ router.post('/', (req, res) => {
       const phoneNumber = message.from; // Sender's phone number
       const messageText = message.text.body; // Message text
 
-      handleMessage(phoneNumber, messageText); // Call appropriate function to handle the message
+      handleMessage(phoneNumber, messageText); // Handle the message
     }
     res.sendStatus(200);
   } else {
@@ -21,16 +21,16 @@ router.post('/', (req, res) => {
   }
 });
 
-// Handle postback (button click, etc.)
+// Handle incoming postback (button clicks)
 router.post('/postback', (req, res) => {
   const data = req.body;
 
   if (data.object) {
-    if (data.entry && data.entry[0].changes && data.entry[0].changes[0].value.contacts) {
+    if (data.entry && data.entry[0].changes && data.entry[0].changes[0].value.messages) {
       const phoneNumber = data.entry[0].changes[0].value.contacts[0].wa_id;
       const postbackPayload = data.entry[0].changes[0].value.messages[0].interactive.button.reply.payload;
 
-      handlePostback(phoneNumber, postbackPayload); // Handle the postback (button selection)
+      handlePostback(phoneNumber, postbackPayload); // Handle the postback
     }
     res.sendStatus(200);
   } else {
