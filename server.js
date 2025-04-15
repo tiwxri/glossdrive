@@ -107,3 +107,10 @@ app.post('/webhook', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+
+ads_management
+pages_messaging
+whatsapp_business_management
+whatsapp_business_messaging
+
