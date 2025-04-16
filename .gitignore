@@ -26,3 +26,6 @@ build/
 
 # Mac trash
 .Trashes
+
+# Firebase secrets
+config/*.json
