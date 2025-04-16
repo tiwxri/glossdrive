@@ -42,12 +42,10 @@ app.post('/webhook', async (req, res) => {
         userMessage = 'Unsupported message type';
       }
 
-      // ✅ Handle session and response
+      // ✅ Handle session and response for WhatsApp
       const session = await getSession(from);
       const newSession = await updateSession(from, userMessage, session);
-
       const reply = await handleMessageFlow(from, userMessage, newSession);
-
       await sendMessage(from, reply);
 
       return res.sendStatus(200);
@@ -60,16 +58,22 @@ app.post('/webhook', async (req, res) => {
   // ✅ Handle Custom Chatbot Payloads (e.g. from your frontend)
   const { senderId, message, payload } = body;
 
-  if (message) {
-    handleMessageFlow(senderId, message, (senderId, responseMessage) => {
-      res.json({ senderId, responseMessage });
-    });
-  } else if (payload) {
-    handlePostbackFlow(senderId, payload, (senderId, responseMessage) => {
-      res.json({ senderId, responseMessage });
-    });
-  } else {
-    res.status(400).send('Invalid request');
+  try {
+    if (message) {
+      const session = await getSession(senderId);
+      const newSession = await updateSession(senderId, message, session);
+      const reply = await handleMessageFlow(senderId, message, newSession);
+      res.json({ senderId, responseMessage: reply });
+    } else if (payload) {
+      handlePostbackFlow(senderId, payload, (senderId, responseMessage) => {
+        res.json({ senderId, responseMessage });
+      });
+    } else {
+      res.status(400).send('Invalid request');
+    }
+  } catch (err) {
+    console.error('Error handling frontend chatbot message:', err);
+    res.sendStatus(500);
   }
 });
 
