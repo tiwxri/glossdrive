@@ -1,3 +1,4 @@
+const path = require('path');
 const admin = require('firebase-admin');
 const serviceAccount = require(path.resolve(__dirname, 'serviceAccount.json'));
 
