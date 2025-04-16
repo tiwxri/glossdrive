@@ -1,181 +1,96 @@
-const { getTimeBasedGreeting } = require('../utils/greetings');
-const { generateServiceButtons, generateAddonButtons } = require('../utils/buttons');
-const { getAvailableTimeSlots } = require('../utils/time');
-const express = require('express');
-const router = express.Router();
-
-const db = require('../path/to/your/firebase-init-file'); // Firebase Firestore instance
-
-const generateOrderId = () => `ORD-${Math.floor(Math.random() * 1000000)}`;
-
-const services = {
-  exterior: 500,
-  interior: 400,
-  full: 800,
-};
-
-const addons = {
-  acVent: 150,
-  shine: 200,
-  none: 0,
-};
-
-const getSessionRef = (senderId) => db.collection('sessions').doc(senderId);
-
-const handleMessageFlow = async (senderId, message, sendMessage) => {
-  const sessionRef = getSessionRef(senderId);
-  let sessionSnap = await sessionRef.get();
-  let session = sessionSnap.exists ? sessionSnap.data() : { stage: 'greet' };
-
-  const text = message?.text?.trim() || '';
-
-  switch (session.stage) {
-    case 'greet': {
-      const greeting = getTimeBasedGreeting();
-      sendMessage(senderId, `${greeting}! Welcome to GlossDrive 🚗✨\nCan I know your name?`);
-      session.stage = 'get_name';
-      break;
-    }
-
-    case 'get_name': {
-      session.name = text;
-      session.stage = 'get_location';
-      sendMessage(senderId, `Hi ${text}, where do you stay?`, [
-        { type: 'postback', title: 'U Block DLF phase 3', payload: 'LOCATION_U_BLOCK' },
-        { type: 'postback', title: 'Others', payload: 'LOCATION_OTHERS' },
-      ]);
-      break;
-    }
-
-    case 'get_service': {
-      session.stage = 'addons';
-      if (text.includes('Exterior')) {
-        session.service = 'exterior';
-        session.total = services.exterior;
-        sendMessage(senderId, 'Would you like any addons?', generateAddonButtons());
-      } else if (text.includes('Interior')) {
-        session.service = 'interior';
-        session.total = services.interior;
-        sendMessage(senderId, 'Would you like any addons?', generateAddonButtons());
-      } else if (text.includes('Full')) {
-        session.service = 'full';
-        session.total = services.full;
-        session.stage = 'time';
-        askTimeSlots(senderId, sendMessage);
-      } else {
-        sendMessage(senderId, 'Please choose a valid service option: Exterior, Interior, or Full.');
+app.post("/webhook", async (req, res) => {
+    try {
+      const body = req.body;
+  
+      // Validate incoming webhook structure
+      if (
+        body.object &&
+        Array.isArray(body.entry) &&
+        body.entry.length > 0 &&
+        Array.isArray(body.entry[0].changes) &&
+        body.entry[0].changes.length > 0
+      ) {
+        const value = body.entry[0].changes[0].value;
+  
+        if (!value.messages || value.messages.length === 0) {
+          console.log("No messages in the payload.");
+          return res.sendStatus(200);
+        }
+  
+        // Loop through all messages (better than just messages[0])
+        for (const message of value.messages) {
+          const from = message.from;
+          if (!from) {
+            console.warn("Message received without sender info.");
+            continue; // Skip this message
+          }
+  
+          // Handle text and interactive messages
+          let msgBody = "";
+          if (message.type === "text") {
+            msgBody = message.text?.body;
+          } else if (message.type === "interactive") {
+            msgBody =
+              message.interactive?.button_reply?.title ||
+              message.interactive?.list_reply?.title ||
+              "";
+          } else {
+            console.log("Unsupported message type:", message.type);
+            continue;
+          }
+  
+          if (!msgBody) {
+            console.log("Empty or unsupported message format.");
+            continue;
+          }
+  
+          const session = await getSession(from);
+          const currentStep = session.step || "initial";
+  
+          if (currentStep === "initial") {
+            await sendMessage(
+              from,
+              "Welcome to GlossDrive! 🚗✨\n\nPlease choose a service:\n*Basic*\n*Premium*"
+            );
+            await updateSession(from, { step: "service" });
+          } else if (currentStep === "service") {
+            const validServices = ["basic", "premium"];
+            const service = msgBody.toLowerCase();
+            if (!validServices.includes(service)) {
+              await sendMessage(from, "Please choose either *Basic* or *Premium*.");
+              continue;
+            }
+  
+            await sendMessage(
+              from,
+              "Great choice! 🎉\nNow select any add-ons you'd like:\n*Waxing*, *Interior Vacuum*, *Tyre Polish*.\n(You can type multiple separated by commas, or say 'None')"
+            );
+            await updateSession(from, { step: "addons", service });
+          } else if (currentStep === "addons") {
+            await sendMessage(
+              from,
+              "Awesome! Lastly, please select a time slot:\n*10AM-12PM*, *12PM-2PM*, *2PM-4PM*"
+            );
+            await updateSession(from, { step: "timeslot", addons: msgBody });
+          } else if (currentStep === "timeslot") {
+            await sendMessage(
+              from,
+              "✅ All set! We'll see you at your selected time. To start over, type 'restart'."
+            );
+            await updateSession(from, { step: "completed", timeslot: msgBody });
+          } else if (currentStep === "completed" && msgBody.toLowerCase() === "restart") {
+            await sendMessage(from, "Let's start over! 👋");
+            await updateSession(from, { step: "initial" });
+          } else {
+            await sendMessage(from, "Thanks! If you'd like to restart, type 'restart'.");
+          }
+        }
       }
-      break;
+  
+      res.sendStatus(200); // Always respond quickly to WhatsApp
+    } catch (error) {
+      console.error("Webhook error:", error);
+      res.sendStatus(500);
     }
-
-    case 'time': {
-      session.time = text;
-      session.stage = 'confirm';
-      sendMessage(senderId, `Your total is ₹${session.total}. Proceed to payment or start again?`, [
-        { type: 'postback', title: 'Pay Now', payload: 'PAY_NOW' },
-        { type: 'postback', title: 'Start Over', payload: 'RESTART' },
-      ]);
-      break;
-    }
-
-    case 'confirm': {
-      if (text.includes('Pay')) {
-        const orderId = generateOrderId();
-        sendMessage(
-          senderId,
-          `Payment confirmed ✅\nOrder ID: ${orderId}\nThank you ${session.name}! We'll see you soon at your location.`
-        );
-        await sessionRef.delete();
-        return;
-      } else {
-        session.stage = 'get_service';
-        sendServiceOptions(senderId, sendMessage);
-      }
-      break;
-    }
-
-    default: {
-      sendMessage(senderId, 'Let’s start over.');
-      session.stage = 'greet';
-      break;
-    }
-  }
-
-  await sessionRef.set(session);
-};
-
-const handlePostbackFlow = async (senderId, payload, sendMessage) => {
-  const sessionRef = getSessionRef(senderId);
-  let sessionSnap = await sessionRef.get();
-  let session = sessionSnap.exists ? sessionSnap.data() : {};
-
-  switch (payload) {
-    case 'LOCATION_U_BLOCK':
-      session.stage = 'get_service';
-      sendServiceOptions(senderId, sendMessage);
-      break;
-
-    case 'LOCATION_OTHERS':
-      sendMessage(senderId, 'Sorry! We are currently not servicing your area. 😔');
-      await sessionRef.delete();
-      return;
-
-    case 'ADDON_AC_VENT':
-      session.total += addons.acVent;
-      session.stage = 'time';
-      askTimeSlots(senderId, sendMessage);
-      break;
-
-    case 'ADDON_SHINE':
-      session.total += addons.shine;
-      session.stage = 'time';
-      askTimeSlots(senderId, sendMessage);
-      break;
-
-    case 'ADDON_NONE':
-      session.stage = 'time';
-      askTimeSlots(senderId, sendMessage);
-      break;
-
-    case 'PAY_NOW': {
-      const orderId = generateOrderId();
-      sendMessage(
-        senderId,
-        `Payment confirmed ✅\nOrder ID: ${orderId}\nThank you ${session.name}! We'll see you soon at your location.`
-      );
-      await sessionRef.delete();
-      return;
-    }
-
-    case 'RESTART':
-      session.stage = 'get_service';
-      sendServiceOptions(senderId, sendMessage);
-      break;
-
-    default:
-      sendMessage(senderId, 'Not sure what you meant. Let’s start over.');
-      session.stage = 'greet';
-      break;
-  }
-
-  await sessionRef.set(session);
-};
-
-const sendServiceOptions = (senderId, sendMessage) => {
-  sendMessage(senderId, 'What services are you looking for?', generateServiceButtons());
-};
-
-const askTimeSlots = (senderId, sendMessage) => {
-  const timeSlots = getAvailableTimeSlots();
-  sendMessage(senderId, 'Pick your preferred time:', timeSlots.map(slot => ({
-    type: 'postback',
-    title: slot.label,
-    payload: slot.value
-  })));
-};
-
-module.exports = {
-  handleMessageFlow,
-  handlePostbackFlow,
-  generateReply: handleMessageFlow,
-};
+  });
+  

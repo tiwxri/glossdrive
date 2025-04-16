@@ -3,21 +3,20 @@
 const axios = require('axios');
 const { getAvailableTimeSlots } = require('../utils/time');
 const { generateServiceButtons, generateAddonButtons } = require('../utils/buttons');
+const { getSession, setSession, deleteSession } = require('../firebase/session');
 
 // WhatsApp Cloud API credentials
 const META_WHATSAPP_API_URL = 'https://graph.facebook.com/v15.0/';
 const WHATSAPP_PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
 const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
 
-let userState = {};
-
 async function handleMessage(message, from) {
-    let user = userState[from] || {};
+    let user = await getSession(from) || {};
 
     if (!user.name) {
         // Greet user and ask for name
         await sendMessage(from, `Hello! What's your name?`);
-        userState[from] = { ...user, stage: 'name' };
+        await setSession(from, { ...user, stage: 'name' });
     } else if (user.stage === 'name') {
         // Save name and ask for location
         user.name = message;
@@ -25,28 +24,23 @@ async function handleMessage(message, from) {
             { label: 'U Block DLF phase 3', value: 'DLF' },
             { label: 'Others', value: 'Others' }
         ]);
-        userState[from] = { ...user, stage: 'location' };
+        await setSession(from, { ...user, stage: 'location' });
     } else if (user.stage === 'location') {
         if (message === 'Others') {
             await sendMessage(from, 'Sorry, we do not service your location.');
-            delete userState[from]; // End chat
+            await deleteSession(from); // End chat
         } else {
-            // Proceed to service selection
             await sendServiceOptions(from);
-            userState[from] = { ...user, stage: 'service' };
+            await setSession(from, { ...user, location: message, stage: 'service' });
         }
     } else if (user.stage === 'service') {
-        // Process service selection
-        await handleServiceSelection(message, from);
+        await handleServiceSelection(message, from, user);
     } else if (user.stage === 'addon') {
-        // Process addon selection
-        await handleAddonSelection(message, from);
+        await handleAddonSelection(message, from, user);
     } else if (user.stage === 'time') {
-        // Handle time slot selection
-        await handleTimeSlotSelection(message, from);
+        await handleTimeSlotSelection(message, from, user);
     } else if (user.stage === 'payment') {
-        // Handle payment flow
-        await handlePaymentSelection(message, from);
+        await handlePaymentSelection(message, from, user);
     }
 }
 
@@ -67,7 +61,7 @@ async function sendMessage(to, message) {
             },
         });
     } catch (error) {
-        console.error('Error sending message:', error);
+        console.error('Error sending message:', error?.response?.data || error);
     }
 }
 
@@ -82,15 +76,10 @@ async function sendButtons(to, message, buttons) {
     const body = {
         messaging_product: 'whatsapp',
         to: to,
-        text: { body: message },
         interactive: {
             type: 'button',
-            body: {
-                text: message,
-            },
-            action: {
-                buttons: buttonPayload,
-            },
+            body: { text: message },
+            action: { buttons: buttonPayload },
         },
     };
 
@@ -102,55 +91,50 @@ async function sendButtons(to, message, buttons) {
             },
         });
     } catch (error) {
-        console.error('Error sending buttons:', error);
+        console.error('Error sending buttons:', error?.response?.data || error);
     }
 }
 
-// Generate the service options buttons
+// Generate service options
 async function sendServiceOptions(from) {
     const buttons = generateServiceButtons();
     await sendButtons(from, 'What services are you looking for?', buttons);
 }
 
 // Handle service selection
-async function handleServiceSelection(service, from) {
-    // Logic for service selection, could be exterior/interior/whole
-    if (service === 'Exterior Car Cleaning') {
+async function handleServiceSelection(service, from, user) {
+    if (service === 'Exterior Car Cleaning' || service === 'Interior Car Cleaning') {
         await sendAddonOptions(from);
-        userState[from].service = 'Exterior Car Cleaning';
-    } else if (service === 'Interior Car Cleaning') {
-        await sendAddonOptions(from);
-        userState[from].service = 'Interior Car Cleaning';
+        await setSession(from, { ...user, service, stage: 'addon' });
     } else {
-        // Handle "Whole Car Cleaning"
-        userState[from].service = 'Whole Car Cleaning';
+        // Whole car cleaning skips addon
         await sendTimeSlots(from);
+        await setSession(from, { ...user, service, stage: 'time' });
     }
 }
 
-// Send addon options (AC vent cleaning, Wheel/Window shine)
+// Send addon options
 async function sendAddonOptions(from) {
     const buttons = generateAddonButtons();
     await sendButtons(from, 'Do you want to add any addons?', buttons);
 }
 
 // Handle addon selection
-async function handleAddonSelection(addon, from) {
-    // Logic to handle addon selection
-    userState[from].addon = addon;
+async function handleAddonSelection(addon, from, user) {
     await sendTimeSlots(from);
+    await setSession(from, { ...user, addon, stage: 'time' });
 }
 
-// Send available time slots based on user input time
+// Send time slots
 async function sendTimeSlots(from) {
     const timeSlots = getAvailableTimeSlots();
     await sendButtons(from, 'Please select a preferred time slot:', timeSlots);
 }
 
 // Handle time slot selection
-async function handleTimeSlotSelection(timeSlot, from) {
-    userState[from].timeSlot = timeSlot;
+async function handleTimeSlotSelection(timeSlot, from, user) {
     await sendPaymentOptions(from);
+    await setSession(from, { ...user, timeSlot, stage: 'payment' });
 }
 
 // Send payment options
@@ -162,15 +146,14 @@ async function sendPaymentOptions(from) {
     await sendButtons(from, 'Would you like to proceed with payment or start over?', buttons);
 }
 
-// Handle payment or restart flow
-async function handlePaymentSelection(selection, from) {
+// Handle payment or restart
+async function handlePaymentSelection(selection, from, user) {
     if (selection === 'pay_now') {
-        await sendMessage(from, 'Proceeding to payment...');
-        // Provide payment link here
+        await sendMessage(from, 'Proceeding to payment... (link coming soon)');
+        // Here you can integrate with Razorpay or Stripe
     } else {
-        // Restart the flow
         await sendServiceOptions(from);
-        userState[from].stage = 'service';
+        await setSession(from, { ...user, stage: 'service' });
     }
 }
 
