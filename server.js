@@ -4,8 +4,8 @@ const app = express();
 
 // ✅ Import your chatbot flow logic
 const { handleMessageFlow, handlePostbackFlow } = require('./utils/flow');
-const { getSession, updateSession } = require('./utils/session');
-const { sendMessage } = require('./utils/messenger');
+const { getSession, updateSession } = require('./firebase');
+const { sendMessage } = require('./utils/greetings');
 
 // ✅ Middleware
 app.use(express.json());
