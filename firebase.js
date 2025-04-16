@@ -5,6 +5,7 @@ if (!process.env.FIREBASE_PRIVATE_KEY) {
   console.error('❌ FIREBASE_PRIVATE_KEY is not defined. Check .env file!');
   process.exit(1);
 }
+console.log("PRIVATE KEY:", process.env.FIREBASE_PRIVATE_KEY ? '✅ Loaded' : '❌ Not Loaded');
 
 admin.initializeApp({
   credential: admin.credential.cert({
