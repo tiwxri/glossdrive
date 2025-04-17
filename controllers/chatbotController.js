@@ -1,6 +1,22 @@
-const { getSession, updateSession } = require('../services/firebaseService');
 const { sendMessage } = require('../services/messageService');
 const flowManager = require('../flows/flowManager');
+
+// Temp in-memory session store
+const sessions = global.sessions || (global.sessions = {});
+
+function getSession(userId) {
+  if (!sessions[userId]) {
+    sessions[userId] = { stage: 'start' };
+  }
+  return sessions[userId];
+}
+
+function updateSession(userId, data) {
+  sessions[userId] = {
+    ...sessions[userId],
+    ...data,
+  };
+}
 
 exports.handleIncomingMessage = async (req, res) => {
   const entry = req.body.entry?.[0]?.changes?.[0]?.value;
@@ -9,9 +25,9 @@ exports.handleIncomingMessage = async (req, res) => {
 
   if (!phone || !msgBody) return res.sendStatus(200);
 
-  const session = await getSession(phone);
+  const session = getSession(phone);
   const { reply, nextSession } = await flowManager.processMessage(msgBody, session, phone);
-  await updateSession(phone, nextSession);
+  updateSession(phone, nextSession);
 
   await sendMessage(phone, reply);
   res.sendStatus(200);
