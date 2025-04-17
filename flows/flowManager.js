@@ -1,7 +1,7 @@
 const { flowSteps } = require('../utils/constants');
 
 exports.processMessage = async (msg, session, phone) => {
-  const step = session?.step || 'welcome';
+  const step = session?.step || 'chooseService';
   const next = { ...session };
 
   switch (step) {
