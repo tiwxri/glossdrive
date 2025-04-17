@@ -17,17 +17,14 @@ function updateSession(userId, data) {
   };
 }
 
-exports.handleIncomingMessage = async (req, res) => {
-  const entry = req.body.entry?.[0]?.changes?.[0]?.value;
-  const phone = entry?.messages?.[0]?.from;
-  const msgBody = entry?.messages?.[0]?.text?.body;
+async function handleIncomingMessage(sender, msgBody) {
+  if (!sender || !msgBody) return;
 
-  if (!phone || !msgBody) return res.sendStatus(200);
+  const session = getSession(sender);
+  const { reply, nextSession } = await flowManager.processMessage(msgBody, session, sender);
+  updateSession(sender, nextSession);
 
-  const session = getSession(phone);
-  const { reply, nextSession } = await flowManager.processMessage(msgBody, session, phone);
-  updateSession(phone, nextSession);
+  await sendMessage(sender, reply);
+}
 
-  await sendMessage(phone, reply);
-  res.sendStatus(200);
-};
+module.exports = { handleIncomingMessage, sendMessage };
