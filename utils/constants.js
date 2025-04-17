@@ -1,9 +1,38 @@
+// utils/constants.js
 exports.flowSteps = {
-    welcome: "👋 Welcome to GlossDrive – Premium Car Cleaning at Your Doorstep!\nReady?\n✅ Yes\n❌ No",
-    chooseService: "What service would you like?\n🧼 Exterior Wash\n🧽 Interior Detailing\n🚗 Full Service",
-    vehicleType: "What type of vehicle do you have?\n🚙 Hatchback\n🚗 Sedan\n🚐 SUV\n🚘 Luxury",
-    addons: `Would you like to add any optional services? (Comma-separated)\n✅ Tyre Polishing\n✅ Engine Bay Cleaning\n✅ Ceramic Coating\n✅ Wax Polish\n✅ Interior Shampooing\n❌ No Addons`,
-    timeSlot: "When would you like the service?\n📅 Today\n📅 Tomorrow\n📅 Pick a Date/Time",
-    userDetails: "Please share details:\n📍 Location, 📞 Phone Number, 🧑 Name (comma-separated)",
-  };
-  
+  chooseService: {
+    type: 'interactive',
+    interactive: {
+      type: 'button',
+      body: {
+        text: 'What service would you like?',
+      },
+      action: {
+        buttons: [
+          {
+            type: 'reply',
+            reply: {
+              id: 'exterior_wash',
+              title: '🧼 Exterior Wash',
+            },
+          },
+          {
+            type: 'reply',
+            reply: {
+              id: 'interior_detailing',
+              title: '🧽 Interior Detailing',
+            },
+          },
+          {
+            type: 'reply',
+            reply: {
+              id: 'full_service',
+              title: '🚗 Full Service',
+            },
+          },
+        ],
+      },
+    },
+  },
+  // Define other steps similarly...
+};

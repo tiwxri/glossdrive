@@ -6,23 +6,34 @@ exports.processMessage = async (msg, session, phone) => {
 
   switch (step) {
     case 'welcome':
-      if (/hi/i.test(msg)) {
+      if (/start/i.test(msg)) {
         next.step = 'chooseService';
         return { reply: flowSteps.chooseService, nextSession: next };
       }
       return { reply: "No problem! Let us know when you're ready.", nextSession: {} };
 
       case 'chooseService':
-        const services = ['Exterior Wash', 'Interior Detailing', 'Full Service'];
-        if (!services.includes(msg.trim())) {
-          return {
-            reply: `Please choose a valid service:\n🧼 Exterior Wash\n🧽 Interior Detailing\n🚗 Full Service`,
-            nextSession: session
-          };
+        // Handle button reply IDs
+        const serviceMap = {
+          exterior_wash: 'Exterior Wash',
+          interior_detailing: 'Interior Detailing',
+          full_service: 'Full Service',
+        };
+  
+        const selectedService = serviceMap[msg.toLowerCase()];
+        if (selectedService) {
+          next.service = selectedService;
+          next.step = 'vehicleType';
+          return { reply: flowSteps.vehicleType, nextSession: next };
+        } else {
+          // If the message doesn't match any button ID, prompt again
+          return { reply: flowSteps.chooseService, nextSession: next };
         }
-        next.service = msg.trim();
-        next.step = 'vehicleType';
-        return { reply: flowSteps.vehicleType, nextSession: next };
+  
+      // Handle other steps...
+  
+      default:
+        return { reply: flowSteps.welcome, nextSession: { step: 'welcome' } };
 
         case 'vehicleType':
           const vehicles = ['Hatchback', 'Sedan', 'SUV', 'Luxury'];
