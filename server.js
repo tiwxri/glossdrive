@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const webhookRoutes = require('./routes/webhook');
 
 const app = express();
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '2mb' }));
 
 // Incoming messages
 app.use('/webhook', webhookRoutes);
