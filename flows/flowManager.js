@@ -10,7 +10,7 @@ exports.processMessage = async (msg, session, phone) => {
         next.step = 'chooseService';
         return { reply: flowSteps.chooseService, nextSession: next };
       }
-      return { reply: "No problem! Let us know when you're ready.", nextSession: {} };
+      return { reply: "No problem! Let us know when you're ready.", nextSession: next };
 
       case 'chooseService':
         // Handle button reply IDs
