@@ -1,16 +1,20 @@
+const chatbotController = require('../controllers/chatbotController');
+const { flowSteps } = require('../utils/constants');
 const express = require('express');
 const router = express.Router();
-const chatbotController = require('../controllers/chatbotController');
 
 router.post('/', async (req, res) => {
   try {
-    // ✅ Log the entire incoming payload for debugging
     console.log('🔔 Incoming webhook:', JSON.stringify(req.body, null, 2));
 
     const body = req.body;
+    const entry = body.entry?.[0];
+    const changes = entry?.changes?.[0];
+    const value = changes?.value;
+    const messages = value?.messages;
 
-    if (body.object && body.entry && body.entry[0].changes && body.entry[0].changes[0].value.messages) {
-      const message = body.entry[0].changes[0].value.messages[0];
+    if (messages && messages.length > 0) {
+      const message = messages[0];
       const sender = message.from;
 
       let msg = '';
@@ -26,11 +30,8 @@ router.post('/', async (req, res) => {
         msg = message.text.body.trim().toLowerCase();
       }
 
-      // Handle greetings like "hi", "hello", "start"
       const greetings = ['hi', 'hello', 'hey', 'start'];
       if (greetings.includes(msg)) {
-        // You can start with the first flow step
-        const flowSteps = require('../utils/constants').flowSteps;
         await chatbotController.sendMessage(sender, flowSteps.chooseService);
       } else if (msg) {
         await chatbotController.handleIncomingMessage(sender, msg);
