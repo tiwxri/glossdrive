@@ -32,18 +32,24 @@ exports.processMessage = async (msg, session, phone) => {
   
       // Handle other steps...
 
-        case 'vehicleType':
-          const vehicles = ['Hatchback', 'Sedan', 'SUV', 'Luxury'];
-          if (!vehicles.includes(msg.trim())) {
-            return {
-              reply: `Please select a valid vehicle type:\n🚙 Hatchback\n🚗 Sedan\n🚐 SUV\n🚘 Luxury`,
-              nextSession: session
-            };
-          }
-          next.vehicle = msg.trim();
+      case 'vehicleType': {
+        const vehicleMap = {
+          hatchback: 'Hatchback',
+          sedan: 'Sedan',
+          suv: 'SUV',
+        };
+      
+        const selectedVehicle = vehicleMap[msg.toLowerCase()];
+        if (selectedVehicle) {
+          next.vehicle = selectedVehicle;
           next.step = 'addons';
-          return { reply: flowSteps.addons, nextSession: next };  
+          return { reply: flowSteps.addons, nextSession: next };
+        } else {
+          return { reply: flowSteps.vehicleType, nextSession: next };
+        }
+      } 
 
+      //Addons Options
           case 'addons':
             const availableAddons = [
               'Tyre Polishing',

@@ -35,4 +35,14 @@ exports.flowSteps = {
     },
   },
   // Define other steps similarly...
+  vehicleType: {
+    type: 'buttons',
+    body: 'What type of vehicle do you have?\nYou got other vehicle type? Let us know.',
+    buttons: [
+      { id: 'hatchback', title: '🚙 Hatchback' },
+      { id: 'sedan', title: '🚗 Sedan' },
+      { id: 'suv', title: '🚐 SUV' },
+    ],
+  },
+    // Define other steps similarly...
 };
