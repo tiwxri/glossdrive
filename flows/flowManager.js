@@ -31,9 +31,6 @@ exports.processMessage = async (msg, session, phone) => {
         }
   
       // Handle other steps...
-  
-      default:
-        return { reply: flowSteps.welcome, nextSession: { step: 'welcome' } };
 
         case 'vehicleType':
           const vehicles = ['Hatchback', 'Sedan', 'SUV', 'Luxury'];
