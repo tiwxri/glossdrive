@@ -38,21 +38,24 @@ exports.processMessage = async (msg, session, phone) => {
       // Handle other steps...
 
       case 'vehicleType': {
+        // Extract reply ID from button click or fallback to lowercase text
+        const buttonId = msg?.interactive?.button_reply?.id || msg?.button_reply?.id || msg?.toLowerCase();
+
         const vehicleMap = {
           hatchback: 'Hatchback',
           sedan: 'Sedan',
           suv: 'SUV',
         };
-      
-        const selectedVehicle = vehicleMap[msg.toLowerCase()];
+
+        const selectedVehicle = vehicleMap[buttonId];
         if (selectedVehicle) {
           next.vehicle = selectedVehicle;
           next.step = 'addons';
-          return { reply: flowSteps.addons, nextSession: next };
+          return { reply: flowSteps.addonsStep1, nextSession: next }; // Send first batch of addons
         } else {
-          return { reply: flowSteps.vehicleType, nextSession: next };
+          return { reply: flowSteps.vehicleType, nextSession: next }; // Repeat question
         }
-      } 
+      }
 
       // After vehicleType...
       case 'addons':
