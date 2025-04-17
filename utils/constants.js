@@ -68,7 +68,77 @@ exports.flowSteps = {
         ],
       },
     },
-  }
+  },
   
     // Define other steps similarly...
+    addonsStep1: {
+      type: 'interactive',
+      interactive: {
+        type: 'button',
+        body: {
+          text: 'Choose Add‑On (1 of 2):',
+        },
+        action: {
+          buttons: [
+            {
+              type: 'reply',
+              reply: {
+                id: 'addon_tyre_polishing',
+                title: '🧼 Tyre Polishing',
+              },
+            },
+            {
+              type: 'reply',
+              reply: {
+                id: 'addon_engine_bay',
+                title: '🛠️ Engine Bay Cleaning',
+              },
+            },
+            {
+              type: 'reply',
+              reply: {
+                id: 'more_addons',
+                title: '➡️ More Add‑Ons',
+              },
+            },
+          ],
+        },
+      },
+    },
+  
+    addonsStep2: {
+      type: 'interactive',
+      interactive: {
+        type: 'button',
+        body: {
+          text: 'Choose Add‑On (2 of 2):',
+        },
+        action: {
+          buttons: [
+            {
+              type: 'reply',
+              reply: {
+                id: 'addon_ceramic_coating',
+                title: '💎 Ceramic Coating',
+              },
+            },
+            {
+              type: 'reply',
+              reply: {
+                id: 'addon_wax_polish',
+                title: '✨ Wax Polish',
+              },
+            },
+            {
+              type: 'reply',
+              reply: {
+                id: 'addon_interior_shampoo',
+                title: '🧽 Interior Shampooing',
+              },
+            },
+          ],
+        },
+      },
+    },
+  
 };

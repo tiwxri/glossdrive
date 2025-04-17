@@ -54,48 +54,61 @@ exports.processMessage = async (msg, session, phone) => {
         }
       } 
 
-      //Addons Options
-          case 'addons':
-            const availableAddons = [
-              'Tyre Polishing',
-              'Engine Bay Cleaning',
-              'Ceramic Coating',
-              'Wax Polish',
-              'Interior Shampooing'
-            ];
-          
-            if (/no/i.test(msg)) {
-              next.addons = [];
-            } else {
-              const selected = msg.split(',').map(a => a.trim());
-              const invalid = selected.filter(a => !availableAddons.includes(a));
-              if (invalid.length > 0) {
-                return {
-                  reply: `Invalid addon(s): ${invalid.join(', ')}. Please select from:\n✅ ${availableAddons.join('\n✅ ')}`,
-                  nextSession: session
-                };
-              }
-              next.addons = selected;
-            }
-          
-            next.step = 'timeSlot';
-            return { reply: flowSteps.timeSlot, nextSession: next };
+      // After vehicleType...
+      case 'addons':
+        // Kick‐off with first batch
+        next.step = 'addonsStep1';
+        return { reply: flowSteps.addonsStep1, nextSession: next };
 
-            case 'timeSlot':
-              const lowerMsg = msg.toLowerCase();
-              if (['today', 'tomorrow'].includes(lowerMsg) || /\d{4}-\d{2}-\d{2}/.test(msg)) {
-                next.dateTime = msg;
-                next.step = 'userDetails';
-                return { reply: flowSteps.userDetails, nextSession: next };
-              } else {
-                return {
-                  reply: `Please select a valid date option:
-            📅 Today
-            📅 Tomorrow
-            📅 Or enter a custom date like 2025-04-20`,
-                  nextSession: next
-                };
-              }
+      case 'addonsStep1': {
+        if (msg === 'more_addons') {
+          next.step = 'addonsStep2';
+          return { reply: flowSteps.addonsStep2, nextSession: next };
+        }
+        const map1 = {
+          addon_tyre_polishing: 'Tyre Polishing',
+          addon_engine_bay:     'Engine Bay Cleaning'
+        };
+        if (map1[msg]) {
+          next.addons = [map1[msg]];
+          next.step = 'addons';
+          return { reply: flowSteps.timeSlot, nextSession: next };
+        }
+        // fallback
+        return { reply: flowSteps.addonsStep1, nextSession: next };
+      }
+
+      case 'addonsStep2': {
+        const map2 = {
+          addon_ceramic_coating:    'Ceramic Coating',
+          addon_wax_polish:         'Wax Polish',
+          addon_interior_shampoo:   'Interior Shampooing'
+        };
+        if (map2[msg]) {
+          next.addons = [ ...(session.addons || []), map2[msg] ];
+          next.step = 'timeSlot';
+          return { reply: flowSteps.timeSlot, nextSession: next };
+        }
+        // fallback
+        return { reply: flowSteps.addonsStep2, nextSession: next };
+      }
+
+      // ... other cases ...
+      case 'timeSlot':
+        const lowerMsg = msg.toLowerCase();
+        if (['today', 'tomorrow'].includes(lowerMsg) || /\d{4}-\d{2}-\d{2}/.test(msg)) {
+          next.dateTime = msg;
+          next.step = 'userDetails';
+          return { reply: flowSteps.userDetails, nextSession: next };
+        } else {
+          return {
+            reply: `Please select a valid date option:
+      📅 Today
+      📅 Tomorrow
+      📅 Or enter a custom date like 2025-04-20`,
+            nextSession: next
+          };
+        }
 
       case 'userDetails':
         const [location, phoneNum, name] = msg.split(',').map(s => s?.trim());
