@@ -4,6 +4,9 @@ const chatbotController = require('../controllers/chatbotController');
 
 router.post('/', async (req, res) => {
   try {
+    // ✅ Log the entire incoming payload for debugging
+    console.log('🔔 Incoming webhook:', JSON.stringify(req.body, null, 2));
+
     const body = req.body;
 
     if (body.object && body.entry && body.entry[0].changes && body.entry[0].changes[0].value.messages) {
