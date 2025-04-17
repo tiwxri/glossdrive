@@ -14,13 +14,18 @@ exports.processMessage = async (msg, session, phone) => {
 
       case 'chooseService':
         // Handle button reply IDs
+
+        // Extract reply ID from interactive button click
+        const buttonId = msg?.interactive?.button_reply?.id || msg?.button_reply?.id || msg?.toLowerCase(); // fallback for testing
+        console.log('Service selection ID:', buttonId); // helpful for debugging
+
         const serviceMap = {
           exterior_wash: 'Exterior Wash',
           interior_detailing: 'Interior Detailing',
           full_service: 'Full Service',
         };
   
-        const selectedService = serviceMap[msg.toLowerCase()];
+        const selectedService = serviceMap[buttonId];
         if (selectedService) {
           next.service = selectedService;
           next.step = 'vehicleType';
