@@ -1,7 +1,6 @@
 const { sendMessage } = require('../services/messageService');
 const flowManager = require('../flows/flowManager');
 
-// Temp in-memory session store
 const sessions = global.sessions || (global.sessions = {});
 
 function getSession(userId) {
