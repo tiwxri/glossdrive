@@ -49,11 +49,20 @@ router.post('/', async (req, res) => {
       if (!session) {
         session = { step: null, data: {} };
       }
+      
+      if (!session.step) {
+        session.step = 'chooseService';
+      }
 
       const greetings = ['hi', 'hello', 'hey', 'start'];
       if (greetings.includes(msg)) {
         session.step = 'chooseService';
         await chatbotController.sendMessage(sender, flowSteps.chooseService);
+        await saveSession(sender, session);
+        return res.sendStatus(200); // <-- Add return to prevent continuing
+      } if (msg) {
+        session = await chatbotController.handleIncomingMessage(sender, msg, session);
+        await saveSession(sender, session);
       } else if (msg) {
         session = await chatbotController.handleIncomingMessage(sender, msg, session);
       }
