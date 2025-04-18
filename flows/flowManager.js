@@ -71,7 +71,7 @@ exports.processMessage = async (msg, session, phone) => {
         }
         const map1 = {
           addon_tyre_polishing: 'Tyre Polishing',
-          addon_engine_bay:     'Engine Bay Cleaning'
+          addon_engine_bay:     'Engine Bay'
         };
         if (map1[msg]) {
           next.addons = [...(session.addons || []), map1[msg]];
@@ -86,7 +86,7 @@ exports.processMessage = async (msg, session, phone) => {
         const map2 = {
           addon_ceramic_coating:    'Ceramic Coating',
           addon_wax_polish:         'Wax Polish',
-          addon_interior_shampoo:   'Interior Shampooing'
+          addon_interior_shampoo:   'Interior Shampoo'
         };
         if (map2[msg]) {
           next.addons = [ ...(session.addons || []), map2[msg] ];

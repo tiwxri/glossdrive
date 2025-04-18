@@ -91,7 +91,7 @@ exports.flowSteps = {
               type: 'reply',
               reply: {
                 id: 'addon_engine_bay',
-                title: '🛠️ Engine Bay Cleaning',
+                title: '🛠️ Engine Bay',
               },
             },
             {
@@ -133,7 +133,7 @@ exports.flowSteps = {
               type: 'reply',
               reply: {
                 id: 'addon_interior_shampoo',
-                title: '🧽 Interior Shampooing',
+                title: '🧽 Interior Shampoo',
               },
             },
           ],
