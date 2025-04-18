@@ -10,11 +10,11 @@ function getOneTimeSlots() {
     { label: '9–10 AM', start: 9, end: 10 },
     { label: '10–11 AM', start: 10, end: 11 },
     { label: '11–12 PM', start: 11, end: 12 },
-    { label: '12–1 PM', start: 12, end: 13 },
-    { label: '1–2 PM', start: 13, end: 14 },
-    { label: '2–3 PM', start: 14, end: 15 },
-    { label: '3–4 PM', start: 15, end: 16 },
-    { label: '4–5 PM', start: 16, end: 17 }
+    // { label: '12–1 PM', start: 12, end: 13 },
+    // { label: '1–2 PM', start: 13, end: 14 },
+    // { label: '2–3 PM', start: 14, end: 15 },
+    // { label: '3–4 PM', start: 15, end: 16 },
+    // { label: '4–5 PM', start: 16, end: 17 }
   ];
 
   const available = allSlots.filter(slot => hour < slot.start);
