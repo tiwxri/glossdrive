@@ -72,16 +72,19 @@ exports.flowSteps = {
   
     // Define other steps similarly...
     addonsStep1: {
-      type: 'buttons',
-      body: {
-        text: 'Choose an addon (optional):'
-      },
-      action: {
-        buttons: [
-          { type: 'reply', reply: { id: 'addon_wheel_polish', title: '🛞 Wheel Polish' } },
-          { type: 'reply', reply: { id: 'addon_window_shine', title: '✨ Window Shine' } },
-          { type: 'reply', reply: { id: 'addon_none', title: '❌ None' } }
-        ]
+      type: 'interactive',
+      interactive: {
+        type: 'button',
+        body: {
+          text: 'Choose an addon (optional):'
+        },
+        action: {
+          buttons: [
+            { type: 'reply', reply: { id: 'addon_wheel_polish', title: '🛞 Wheel Polish' } },
+            { type: 'reply', reply: { id: 'addon_window_shine', title: '✨ Window Shine' } },
+            { type: 'reply', reply: { id: 'addon_none', title: '❌ None' } }
+          ]
+        }
       }
     },
 
