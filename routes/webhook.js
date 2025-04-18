@@ -17,11 +17,7 @@ function getGreetingByIST() {
   
   if (hour < 12) return 'Good Morning ☀️';
   else if (hour < 17) return 'Good Afternoon 🌤️';
-  else 'Good Evening 🌙';
-
-  const brandIntro = "Doorstep car cleaning, done right — fast, spotless, hassle-free!";
-
-  return `${greeting}\n${brandIntro}`;
+  else return 'Good Evening 🌙';
 }
 
 router.post('/', async (req, res) => {
@@ -65,7 +61,7 @@ router.post('/', async (req, res) => {
         session.step = 'chooseService';
       
         const greetingText = getGreetingByIST();
-        const welcomeMessage = `${greetingText}! Welcome to GlossDrive 🚗✨`;
+        const welcomeMessage = `${greetingText}! Welcome to GlossDrive 🚗✨\nDoorstep car cleaning, done right — fast, spotless, hassle-free!`;
       
         await chatbotController.sendMessage(sender, welcomeMessage);
         await chatbotController.sendMessage(sender, flowSteps.chooseService);
