@@ -134,44 +134,32 @@ exports.processMessage = async (msg, session, phone) => {
           return { reply: flowSteps.vehicleType, nextSession: next }; // Repeat question
         }
       }
+//------------------------------------------------------------------------------------------
+      case 'addons': {
+        const id = msg?.interactive?.button_reply?.id || msg?.button_reply?.id || msg?.toLowerCase();
 
-      // After vehicleType...
-      case 'addons':
-        // Kick‐off with first batch
-        next.step = 'addonsStep1';
-        return { reply: flowSteps.addonsStep1, nextSession: next };
-
-      case 'addonsStep1': {
-        if (msg === 'more_addons') {
-          next.step = 'addonsStep2';
-          return { reply: flowSteps.addonsStep2, nextSession: next };
-        }
-        const map1 = {
-          addon_tyre_polishing: 'Tyre Polishing',
-          addon_engine_bay:     'Engine Bay'
+        const addonMap = {
+          addon_wheel_polish: 'Wheel Polish',
+          addon_window_shine: 'Window Shine',
+          addon_none: null
         };
-        if (map1[msg]) {
-          next.addons = [...(session.addons || []), map1[msg]];
-          next.step = 'addons';
-          return { reply: flowSteps.timeSlot, nextSession: next };
-        }
-        // fallback
-        return { reply: flowSteps.addonsStep1, nextSession: next };
-      }
 
-      case 'addonsStep2': {
-        const map2 = {
-          addon_ceramic_coating:    'Ceramic Coating',
-          addon_wax_polish:         'Wax Polish',
-          addon_interior_shampoo:   'Interior Shampoo'
-        };
-        if (map2[msg]) {
-          next.addons = [ ...(session.addons || []), map2[msg] ];
+        const selectedAddon = addonMap[id];
+
+        if (id === 'addon_none') {
+          next.addons = [];
           next.step = 'subscriptionType';
-          return { reply: flowSteps.timeSlot, nextSession: next };
+          return { reply: flowSteps.subscriptionType, nextSession: next };
         }
+
+        if (selectedAddon) {
+          next.addons = [selectedAddon];
+          next.step = 'subscriptionType';
+          return { reply: flowSteps.subscriptionType, nextSession: next };
+        }
+
         // fallback
-        return { reply: flowSteps.addonsStep2, nextSession: next };
+        return { reply: flowSteps.addonsStep1, nextSession: next };
       }
 
 //Booking Frequency ---------------------------------------------------------------------------------------------------------
