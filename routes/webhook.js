@@ -53,22 +53,24 @@ router.post('/', async (req, res) => {
       if (!session.step) {
         session.step = 'chooseService';
       }
-
+      
       const greetings = ['hi', 'hello', 'hey', 'start'];
       if (greetings.includes(msg)) {
         session.step = 'chooseService';
         await chatbotController.sendMessage(sender, flowSteps.chooseService);
         await saveSession(sender, session);
-        return res.sendStatus(200); // <-- Add return to prevent continuing
-      } if (msg) {
-        session = await chatbotController.handleIncomingMessage(sender, msg, session);
-        await saveSession(sender, session);
-      } else if (msg) {
-        session = await chatbotController.handleIncomingMessage(sender, msg, session);
+        return res.sendStatus(200); // 🛑 stops further execution
       }
-
-      // 💾 Save session to Firebase
-      await saveSession(sender, session);
+      
+      if (msg) {
+        const newSession = await chatbotController.handleIncomingMessage(sender, msg, session);
+      
+        if (newSession && typeof newSession === 'object') {
+          await saveSession(sender, newSession);
+        } else {
+          console.error('❌ Skipping save — invalid session:', newSession);
+        }
+      }
     }
 
     res.sendStatus(200);
