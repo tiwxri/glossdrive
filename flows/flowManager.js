@@ -1,5 +1,82 @@
 const { flowSteps } = require('../utils/constants');
 
+// -----------------------------------------
+// Helper function to generate one-time slots
+function getOneTimeSlots() {
+  const now = new Date();
+  const hour = now.getHours();
+
+  const allSlots = [
+    { label: '9–10 AM', start: 9, end: 10 },
+    { label: '10–11 AM', start: 10, end: 11 },
+    { label: '11–12 PM', start: 11, end: 12 },
+    { label: '12–1 PM', start: 12, end: 13 },
+    { label: '1–2 PM', start: 13, end: 14 },
+    { label: '2–3 PM', start: 14, end: 15 },
+    { label: '3–4 PM', start: 15, end: 16 },
+    { label: '4–5 PM', start: 16, end: 17 }
+  ];
+
+  const available = allSlots.filter(slot => hour < slot.start);
+  if (available.length === 0) {
+    return {
+      type: 'text',
+      body: 'No more slots available for today. Please try again tomorrow!',
+    };
+  }
+
+  return {
+    type: 'interactive',
+    interactive: {
+      type: 'button',
+      body: {
+        text: 'Choose a time slot for your one-time service:',
+      },
+      action: {
+        buttons: available.map(slot => ({
+          type: 'reply',
+          reply: {
+            id: `slot_${slot.start}_${slot.end}`,
+            title: slot.label,
+          },
+        })),
+      },
+    },
+  };
+}
+
+// -----------------------------------------
+// Helper function to generate recurring time slots
+function getRecurringTimeSlots(timeOfDay) {
+  const slotMap = {
+    Morning: ['5–6 AM', '6–7 AM', '7–8 AM'],
+    Afternoon: ['12–1 PM', '1–2 PM', '2–3 PM'],
+    Evening: ['7–8 PM', '8–9 PM', '9–10 PM'],
+  };
+
+  const slots = slotMap[timeOfDay] || [];
+
+  return {
+    type: 'interactive',
+    interactive: {
+      type: 'button',
+      body: {
+        text: `Choose your preferred ${timeOfDay.toLowerCase()} slot:`,
+      },
+      action: {
+        buttons: slots.map((slot, idx) => ({
+          type: 'reply',
+          reply: {
+            id: `recurring_${timeOfDay}_${idx}`,
+            title: slot,
+          },
+        })),
+      },
+    },
+  };
+}
+
+
 exports.processMessage = async (msg, session, phone) => {
   const step = session?.step || 'chooseService';
   const next = { ...session };
@@ -90,48 +167,70 @@ exports.processMessage = async (msg, session, phone) => {
         };
         if (map2[msg]) {
           next.addons = [ ...(session.addons || []), map2[msg] ];
-          next.step = 'bookingFrequency';
+          next.step = 'subscriptionType';
           return { reply: flowSteps.timeSlot, nextSession: next };
         }
         // fallback
         return { reply: flowSteps.addonsStep2, nextSession: next };
       }
+
 //Booking Frequency ---------------------------------------------------------------------------------------------------------
-      case 'bookingFrequency': {
-        const buttonId = msg?.interactive?.button_reply?.id || msg?.button_reply?.id || msg.toLowerCase();
-      
-        const options = {
-          onetime: 'One Time',
-          weekly: 'Weekly',
-          monthly: 'Monthly'
-        };
-      
-        const selected = options[buttonId];
+      case 'subscriptionType': {
+        const id = msg?.interactive?.button_reply?.id || msg?.button_reply?.id || msg?.toLowerCase();
+        const valid = { onetime: 'One-Time', weekly: 'Weekly', monthly: 'Monthly' };
+        const selected = valid[id];
         if (selected) {
-          next.bookingFrequency = selected;
-          next.step = 'timeSlot'; // go to next step: date selection
-          return { reply: flowSteps.timeSlot, nextSession: next };
-        } else {
-          return { reply: flowSteps.bookingFrequency, nextSession: next };
-        }
-      }
-      
-      // ... other cases ...
-      case 'timeSlot':
-        const lowerMsg = msg.toLowerCase();
-        if (['today', 'tomorrow'].includes(lowerMsg) || /\d{4}-\d{2}-\d{2}/.test(msg)) {
-          next.dateTime = msg;
-          next.step = 'userDetails';
-          return { reply: flowSteps.userDetails, nextSession: next };
-        } else {
+          next.subscription = selected;
+          next.step = selected === 'One-Time' ? 'timeSlotOneTime' : 'timeOfDay';
           return {
-            reply: `Please select a valid date option:
-      📅 Today
-      📅 Tomorrow
-      📅 Or enter a custom date like 2025-04-20`,
+            reply: selected === 'One-Time' ? getOneTimeSlots() : flowSteps.timeOfDay,
             nextSession: next
           };
         }
+        return { reply: flowSteps.subscriptionType, nextSession: next };
+      }
+
+      case 'timeSlotOneTime': {
+        const id = msg?.interactive?.button_reply?.id;
+        if (id?.startsWith('slot_')) {
+          const [, start, end] = id.split('_');
+          next.dateTime = `${start}:00 - ${end}:00`;
+          next.step = 'userDetails';
+          return { reply: flowSteps.userDetails, nextSession: next };
+        }
+        return { reply: getOneTimeSlots(), nextSession: next };
+      }
+
+      case 'timeOfDay': {
+        const id = msg?.interactive?.button_reply?.id || msg?.button_reply?.id || msg?.toLowerCase();
+        const timeMap = { morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening' };
+        const selected = timeMap[id];
+        if (selected) {
+          next.timeOfDay = selected;
+          next.step = 'timeSlotRecurring';
+          return { reply: getRecurringTimeSlots(selected), nextSession: next };
+        }
+        return { reply: flowSteps.timeOfDay, nextSession: next };
+      }
+
+      case 'timeSlotRecurring': {
+        const id = msg?.interactive?.button_reply?.id;
+        if (id?.startsWith('recurring_')) {
+          const [, timeOfDay, idx] = id.split('_');
+          const map = {
+            Morning: ['5–6 AM', '6–7 AM', '7–8 AM'],
+            Afternoon: ['12–1 PM', '1–2 PM', '2–3 PM'],
+            Evening: ['7–8 PM', '8–9 PM', '9–10 PM']
+          };
+          const slot = map[timeOfDay][parseInt(idx)];
+          next.dateTime = slot;
+          next.step = 'userDetails';
+          return { reply: flowSteps.userDetails, nextSession: next };
+        }
+        return { reply: getRecurringTimeSlots(next.timeOfDay), nextSession: next };
+      }
+      
+      // ... other cases ...
 
       case 'userDetails':
         const [location, phoneNum, name] = msg.split(',').map(s => s?.trim());

@@ -140,38 +140,20 @@ exports.flowSteps = {
         },
       },
     },
-    bookingFrequency: {
+
+  // Subscription type (One-Time, Weekly, Monthly)---------------------------------------------------
+    subscriptionType: {
       type: 'interactive',
       interactive: {
         type: 'button',
-        body: {
-          text: `📅 How often would you like the service?`
-        },
+        body: { text: 'How often would you like your car cleaned?' },
         action: {
           buttons: [
-            {
-              type: 'reply',
-              reply: {
-                id: 'onetime',
-                title: 'One Time'
-              }
-            },
-            {
-              type: 'reply',
-              reply: {
-                id: 'weekly',
-                title: 'Weekly'
-              }
-            },
-            {
-              type: 'reply',
-              reply: {
-                id: 'monthly',
-                title: 'Monthly'
-              }
-            }
+            { type: 'reply', reply: { id: 'onetime', title: 'One-Time' } },
+            { type: 'reply', reply: { id: 'weekly', title: 'Weekly' } },
+            { type: 'reply', reply: { id: 'monthly', title: 'Monthly' } }
           ]
         }
       }
-    }    
+    }
 };
