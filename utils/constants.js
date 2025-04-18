@@ -140,5 +140,13 @@ exports.flowSteps = {
         },
       },
     },
-  
+    bookingFrequency: {
+      type: 'buttons',
+      text: `📅 How often would you like the service?`,
+      buttons: [
+        { id: 'onetime', title: 'One Time' },
+        { id: 'weekly', title: 'Weekly' },
+        { id: 'monthly', title: 'Monthly' },
+      ]
+    },
 };

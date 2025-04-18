@@ -90,13 +90,32 @@ exports.processMessage = async (msg, session, phone) => {
         };
         if (map2[msg]) {
           next.addons = [ ...(session.addons || []), map2[msg] ];
-          next.step = 'timeSlot';
+          next.step = 'bookingFrequency';
           return { reply: flowSteps.timeSlot, nextSession: next };
         }
         // fallback
         return { reply: flowSteps.addonsStep2, nextSession: next };
       }
-
+//Booking Frequency ---------------------------------------------------------------------------------------------------------
+      case 'bookingFrequency': {
+        const buttonId = msg?.interactive?.button_reply?.id || msg?.button_reply?.id || msg.toLowerCase();
+      
+        const options = {
+          onetime: 'One Time',
+          weekly: 'Weekly',
+          monthly: 'Monthly'
+        };
+      
+        const selected = options[buttonId];
+        if (selected) {
+          next.bookingFrequency = selected;
+          next.step = 'timeSlot'; // go to next step: date selection
+          return { reply: flowSteps.timeSlot, nextSession: next };
+        } else {
+          return { reply: flowSteps.bookingFrequency, nextSession: next };
+        }
+      }
+      
       // ... other cases ...
       case 'timeSlot':
         const lowerMsg = msg.toLowerCase();
