@@ -16,15 +16,26 @@ exports.sendMessage = async (phone, message) => {
     data = {
       messaging_product: 'whatsapp',
       to: phone,
+      type: 'text',
       text: { body: message },
     };
-  } else {
-    // Interactive message (e.g., buttons)
+  } else if (message?.type === 'text' && message?.text?.body) {
+    // Valid structured text message
     data = {
       messaging_product: 'whatsapp',
       to: phone,
       ...message,
     };
+  } else if (message?.type === 'interactive') {
+    // Button or list message
+    data = {
+      messaging_product: 'whatsapp',
+      to: phone,
+      ...message,
+    };
+  } else {
+    console.error('❌ Invalid message payload:', message);
+    return;
   }
 
   try {

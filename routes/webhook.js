@@ -7,16 +7,16 @@ const axios = require('axios'); // Required for API call to WhatsApp
 const { getSession, saveSession } = require('../utils/sessionStore');
 
 
-// function getGreetingByIST() {
-//   const date = new Date();
-//   const istOffset = 5.5 * 60 * 60 * 1000;
-//   const istDate = new Date(date.getTime() + istOffset);
-//   const hour = istDate.getUTCHours();
+function getGreetingByIST() {
+  const date = new Date();
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const istDate = new Date(date.getTime() + istOffset);
+  const hour = istDate.getUTCHours();
 
-//   if (hour < 12) return 'Good Morning ☀️';
-//   else if (hour < 17) return 'Good Afternoon 🌤️';
-//   else return 'Good Evening 🌙';
-// }
+  if (hour < 12) return 'Good Morning ☀️';
+  else if (hour < 17) return 'Good Afternoon 🌤️';
+  else return 'Good Evening 🌙';
+}
 
 router.post('/', async (req, res) => {
   try {
@@ -57,7 +57,13 @@ router.post('/', async (req, res) => {
       const greetings = ['hi', 'hello', 'hey', 'start'];
       if (greetings.includes(msg)) {
         session.step = 'chooseService';
+      
+        const greetingText = getGreetingByIST();
+        const welcomeMessage = `${greetingText}! Welcome to GlossDrive 🚗✨`;
+      
+        await chatbotController.sendMessage(sender, welcomeMessage);
         await chatbotController.sendMessage(sender, flowSteps.chooseService);
+      
         await saveSession(sender, session);
         return res.sendStatus(200); // 🛑 stops further execution
       }
