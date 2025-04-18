@@ -13,9 +13,15 @@ function getGreetingByIST() {
   const istDate = new Date(date.getTime() + istOffset);
   const hour = istDate.getUTCHours();
 
+  let greeting;
+  
   if (hour < 12) return 'Good Morning ☀️';
   else if (hour < 17) return 'Good Afternoon 🌤️';
-  else return 'Good Evening 🌙';
+  else 'Good Evening 🌙';
+
+  const brandIntro = "Doorstep car cleaning, done right — fast, spotless, hassle-free!";
+
+  return `${greeting}\n${brandIntro}`;
 }
 
 router.post('/', async (req, res) => {
