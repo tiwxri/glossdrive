@@ -30,4 +30,4 @@ build/
 # Firebase secrets
 config/*.json
 
-firebase/serviceAccount.json
+firebaseCreds/serviceAccount.json
