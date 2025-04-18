@@ -1,4 +1,4 @@
-const { db } = require('../firebase');// adjust path based on location
+const { db } = require('./firebase');// adjust path based on location
 
 const collection = db.collection('sessions');
 
