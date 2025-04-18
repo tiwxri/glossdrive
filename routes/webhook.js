@@ -3,7 +3,6 @@ const { flowSteps } = require('../utils/constants');
 const express = require('express');
 const router = express.Router();
 const axios = require('axios'); // Required for API call to WhatsApp
-const { getSession, updateSession } = require('../utils/sessionManager'); // adjust if needed
 
 function getGreetingByIST() {
   const date = new Date();
