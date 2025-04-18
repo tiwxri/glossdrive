@@ -12,28 +12,29 @@ exports.processMessage = async (msg, session, phone) => {
       }
       return { reply: "No problem! Let us know when you're ready.", nextSession: next };
 
-      case 'chooseService':
-        // Handle button reply IDs
+    case 'chooseService':{
+      // Handle button reply IDs
 
-        // Extract reply ID from interactive button click
-        const buttonId = msg?.interactive?.button_reply?.id || msg?.button_reply?.id || msg?.toLowerCase(); // fallback for testing
-        console.log('Service selection ID:', buttonId); // helpful for debugging
+      // Extract reply ID from interactive button click
+      const buttonId = msg?.interactive?.button_reply?.id || msg?.button_reply?.id || msg?.toLowerCase(); // fallback for testing
+      console.log('Service selection ID:', buttonId); // helpful for debugging
 
-        const serviceMap = {
-          exterior_wash: 'Exterior Wash',
-          interior_detailing: 'Interior Detailing',
-          full_service: 'Full Service',
-        };
-  
-        const selectedService = serviceMap[buttonId];
-        if (selectedService) {
-          next.service = selectedService;
-          next.step = 'vehicleType';
-          return { reply: flowSteps.vehicleType, nextSession: next };
-        } else {
-          // If the message doesn't match any button ID, prompt again
-          return { reply: flowSteps.chooseService, nextSession: next };
-        }
+      const serviceMap = {
+        exterior_wash: 'Exterior Wash',
+        interior_detailing: 'Interior Detailing',
+        full_service: 'Full Service',
+      };
+
+      const selectedService = serviceMap[buttonId];
+      if (selectedService) {
+        next.service = selectedService;
+        next.step = 'vehicleType';
+        return { reply: flowSteps.vehicleType, nextSession: next };
+      } else {
+        // If the message doesn't match any button ID, prompt again
+        return { reply: flowSteps.chooseService, nextSession: next };
+      }
+    }
   
       // Handle other steps...
 
@@ -73,7 +74,7 @@ exports.processMessage = async (msg, session, phone) => {
           addon_engine_bay:     'Engine Bay Cleaning'
         };
         if (map1[msg]) {
-          next.addons = [map1[msg]];
+          next.addons = [...(session.addons || []), map1[msg]];
           next.step = 'addons';
           return { reply: flowSteps.timeSlot, nextSession: next };
         }
