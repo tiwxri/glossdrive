@@ -2,6 +2,19 @@ const chatbotController = require('../controllers/chatbotController');
 const { flowSteps } = require('../utils/constants');
 const express = require('express');
 const router = express.Router();
+const axios = require('axios'); // Required for API call to WhatsApp
+const { getSession, updateSession } = require('../utils/sessionManager'); // adjust if needed
+
+function getGreetingByIST() {
+  const date = new Date();
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const istDate = new Date(date.getTime() + istOffset);
+  const hour = istDate.getUTCHours();
+
+  if (hour < 12) return 'Good Morning ☀️';
+  else if (hour < 17) return 'Good Afternoon 🌤️';
+  else return 'Good Evening 🌙';
+}
 
 router.post('/', async (req, res) => {
   try {
@@ -30,9 +43,55 @@ router.post('/', async (req, res) => {
         msg = message.text.body.trim().toLowerCase();
       }
 
-      const greetings = ['hi', 'hello', 'hey', 'start'];
-      if (greetings.includes(msg)) {
+      // 🧠 Check session and greet user if first time
+      const session = await getSession(sender);
+      if (!session || !session.currentStep) {
+        const greeting = getGreetingByIST();
+        const welcomeText = `👋 ${greeting}!\n\nWelcome to *GlossDrive* 🚗✨\n\n🔥 *Current Offers:*\n- Flat 20% OFF on your first clean\n- Free window shine with premium plan\n\nTap below to get started 👇`;
+
+        const exploreButtonMessage = {
+          messaging_product: 'whatsapp',
+          recipient_type: 'individual',
+          to: sender,
+          type: 'interactive',
+          interactive: {
+            type: 'button',
+            body: {
+              text: welcomeText,
+            },
+            action: {
+              buttons: [
+                {
+                  type: 'reply',
+                  reply: {
+                    id: 'explore_now',
+                    title: '🚀 Explore Now',
+                  },
+                },
+              ],
+            },
+          },
+        };
+
+        await axios.post(
+          `https://graph.facebook.com/v18.0/${process.env.PHONE_NUMBER_ID}/messages`,
+          exploreButtonMessage,
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        await updateSession(sender, { currentStep: 'awaiting_explore' });
+        return res.sendStatus(200); // stop here after greeting
+      }
+
+      // 🎯 Process based on message
+      if (msg === 'explore_now') {
         await chatbotController.sendMessage(sender, flowSteps.chooseService);
+        await updateSession(sender, { currentStep: 'chooseService' });
       } else if (msg) {
         await chatbotController.handleIncomingMessage(sender, msg);
       }
