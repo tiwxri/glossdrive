@@ -4,7 +4,6 @@ node_modules/
 # Env and config
 .env
 .env.local
-firebase.js
 config/serviceAccountKey.json
 
 # Logs
