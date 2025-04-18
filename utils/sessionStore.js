@@ -8,7 +8,13 @@ async function getSession(userId) {
 }
 
 async function saveSession(userId, sessionData) {
-  await collection.doc(userId).set(sessionData);
+    try {
+        const plainData = JSON.parse(JSON.stringify(sessionData));
+        await collection.doc(userId).set(plainData);
+    } catch (error) {
+        console.error('Failed to save session:', sessionData);
+        throw error;
+    }
 }
 
 module.exports = {
