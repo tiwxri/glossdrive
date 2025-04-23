@@ -5,6 +5,7 @@
         "start": "node server.js"
     },
     "dependencies": {
+        "airtable": "^0.12.2",
         "axios": "^1.8.4",
         "body-parser": "^1.20.2",
         "choco": "^0.2.1",
