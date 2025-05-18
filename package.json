@@ -14,6 +14,7 @@
         "firebase-admin": "^13.2.0",
         "moment-timezone": "^0.5.48",
         "qrcode-terminal": "^0.12.0",
+        "spacy": "^0.0.4",
         "whatsapp-web.js": "^1.27.0"
     }
 }
