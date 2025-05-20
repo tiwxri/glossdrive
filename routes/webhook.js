@@ -61,7 +61,16 @@ router.post('/', async (req, res) => {
         session.step = 'chooseService';
       
         const greetingText = getGreetingByIST();
-        const welcomeMessage = `${greetingText}! Welcome to GlossDrive 🚗✨\nDoorstep car cleaning, done right — fast, spotless, hassle-free!`;
+        const welcomeMessage = `${greetingText}! 👋 Hello! Welcome to GlossDrive — your WhatsApp companion for everything on wheels! 🚗
+
+You can:
+• 🔁 Share rides (e.g. “Going from Delhi to Agra at 5PM, 1 seat ₹500”)
+• 🧼 Find car cleaners
+• 🚙 Buy or sell used vehicles
+• 🧰 Post or explore other auto services
+
+🎙️ Just send a voice note or text describing what you need — I’ll take care of the rest!
+`;
       
         await chatbotController.sendMessage(sender, welcomeMessage);
         await chatbotController.sendMessage(sender, flowSteps.chooseService);
