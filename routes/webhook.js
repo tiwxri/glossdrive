@@ -61,7 +61,7 @@ router.post('/', async (req, res) => {
         session.step = 'chooseService';
       
         const greetingText = getGreetingByIST();
-        const welcomeMessage = `${greetingText}! 👋 Hello! Welcome to GlossDrive — your WhatsApp companion for everything on wheels! 🚗
+        const welcomeMessage = `${greetingText}!  Welcome to GlossDrive — your WhatsApp companion for everything on wheels! 🚗
 
 You can:
 • 🔁 Share rides (e.g. “Going from Delhi to Agra at 5PM, 1 seat ₹500”)
