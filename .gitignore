@@ -28,5 +28,6 @@ build/
 
 # Firebase secrets
 config/*.json
+justtxt.txt
 
 firebaseCreds/serviceAccount.json
