@@ -4,7 +4,7 @@ const { detectLanguage, translateText } = require('../services/languageService')
 const { parseRideDetails } = require('../services/parserService');
 const { saveRideToDB } = require('../services/dbService');
 const { sendMessage } = require('../services/messageService');
-const flowManager = require('../flows/flowManager');
+const flowManager = require('../flows/carCleaningFlow');
 const { getSession, saveSession } = require('../utils/sessionStore');
 const { carCleaningFlow } = require('../flows/carCleaningFlow'); // NEW
 
