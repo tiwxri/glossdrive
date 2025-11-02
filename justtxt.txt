@@ -1,0 +1,48 @@
+GLOSSDRIVEMVP/
+├── config/
+│   ├── firebase/
+│   │   └── credentials.json
+│   └── client.js
+│
+├── controllers/
+│   └── chatbotController.js
+│
+├── features/
+│   ├── rideBooking/
+│   │   ├── controller.js
+│   │   ├── flow.js
+│   │   ├── model.js
+│   │   ├── routes.js
+│   │   └── service.js
+│   └── carCleaning/
+│       ├── controller.js    ← will contain car cleaning message logic
+│       ├── flow.js          ← will move carCleaningFlow here
+│       ├── service.js       ← optional, if car data needs to be saved
+│       └── routes.js        ← utility for detecting car cleaning intent
+│
+├── flows/            ❌ Consider deleting after moving `carCleaningFlow`
+├── firebaseCreds/    ❌ Move contents to config/firebase/
+├── node_modules/
+├── routes/
+│   └── webhook.js
+├── services/
+│   ├── airtableService.js
+│   ├── dbService.js
+│   ├── firebaseService.js
+│   ├── languageService.js
+│   ├── messageService.js
+│   ├── parserService.js
+│   └── transcribeService.js
+│
+├── utils/
+│   ├── constants.js
+│   ├── firebase.js
+│   ├── keywordUtils.js     ✅ NEW
+│   ├── sessionStore.js
+│   └── timeUtils.js
+│
+├── .env
+├── .gitignore
+├── package.json
+├── server.js
+└── testServer.js

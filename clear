@@ -1,0 +1,149 @@
+[33m9298801[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m starting with -first feature
+[33m1d85830[m Create SECURITY.md
+[33m261b72e[m started adding the actual code
+[33m3685659[m updated the logic
+[33m43eeacc[m updated the prompt
+[33m1d4b3a4[m updated package metadata
+[33mc997566[m updated the record of env fiel
+[33m8ca465b[m fix: brand statemnet
+[33m02595ac[m added a brand statement
+[33m8d1a80a[m added the greeting function
+[33m0540897[m fix: skip saving session twice
+[33m3fa5e53[m validate sessionData before trying to process it:
+[33m5238498[m function to safely serialize the data before saving
+[33m8ada750[m Update the webhook logic to prevent multiple handlers firing per message
+[33ma4d6440[m updated the json parser
+[33mb9dfec1[m updated the logic one more time
+[33maad1022[m updated the logic to fix the crash
+[33mefc8ed6[m update the parse statement
+[33ma0da545[m udpated the serviceAccount.json file to the code
+[33m530d7bd[m updated the logic
+[33m0ec8b96[m updated the const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+[33m5b74ba4[m fix incorrect import path for firebase.js
+[33m07acd95[m move firebase.js ot utils folder
+[33m37d4eb1[m Included firebase.js
+[33m222b8f0[m udpated the export structure
+[33m3f782a1[m added firebaseCreds to gitignore
+[33m5748ab3[m updated the file structure
+[33m68c3d52[m updated the path
+[33m5e33035[m moved the file to utils
+[33me1fc77e[m moved the firebase file from config to root
+[33m4aa529c[m incorrect file address
+[33m5589473[m Added the firebase to store sessions
+[33m0e5a9bf[m update v.0.1 of greeting
+[33mdec5462[m removed uneccesary line
+[33ma76652b[m Added IST based Greetings
+[33m47bb8a1[m Error with buttons in Constant
+[33m00354db[m removed multiple addons option
+[33mc2cb229[m commented few lines to debug
+[33m7606dca[m Added subscriptionType code
+[33m8692ad4[m Fix: API doesn't support Buttons as a message type
+[33m1eb7d02[m added bookingFrequency function
+[33m55478b8[m fix: shorten button titles
+[33m8aa96b3[m update the code
+[33m94a86bb[m added the vehicletype button id
+[33m0d202d5[m updated the code again
+[33m01f927a[m removed the welcome code block
+[33m86ecf56[m updated the logic
+[33m0aced95[m updated the logic under webhook file
+[33m7ba170f[m updated the logic
+[33m6c50f65[m udpated the code logic again
+[33m9f1f509[m wasn't reading the greeting text
+[33m20f041e[m fix: treating msg as a plain text string
+[33md4e4e6d[m added the code to extract the actual button id
+[33m407aae1[m udpated the buttons in constant
+[33mfe06a14[m updated the vehicle type button
+[33m10c33f0[m updated the logic
+[33m6211af5[m updated the options to menu buttons for service option only
+[33m182af70[m udpated the logic again
+[33m9ffa3d2[m fixing errors
+[33m16b62c4[m bumped the payload limit
+[33m1a75ef3[m major tweaking
+[33m1e0e353[m update the logic for webhook again
+[33m19e9027[m updated the logic for webhook
+[33m75c54a9[m updated the logic for storing session
+[33md6c6b48[m fixed the error logs
+[33m9cc5ec0[m added the private key
+[33md4f3e6c[m forgot to import path
+[33m51e6fc5[m minor changes to FirebaseConfig file
+[33mf0c2f1a[m renamed the firebase file to serviceAccount.json and moved it to the firebase file
+[33m8ec73fd[m changed the file name of app to server.js
+[33m0ecb533[m updated the package.json
+[33m86b4f14[m changed the file structure to make it more scalable
+[33m1f4e829[m updated the firebase logic adn server as well
+[33m50a3a05[m udpated the code one more time
+[33mb70c286[m udpated the code
+[33m2689087[m V@#
+[33m2183aab[m udpated the code
+[33m4a6790e[m dotenv was not loaded in firebase.js
+[33mc516414[m refactored
+[33m388653d[m Ignore Firebase secrets
+[33m293f458[m Added the DB URL
+[33m354c3ca[m Remove service key from repo
+[33m8a6d104[m udpated the firebase code
+[33me5dcd8b[m changes
+[33ma6fc603[m udpate to the code
+[33m7cd072e[m session storage
+[33mbd0bb7c[m Final changes to webook
+[33m5061535[m 1
+[33m668dbbc[m major chagnes 1
+[33med76add[m major changes to code
+[33mf51a8ee[m changes to greeting folder
+[33m1cbc687[m fixing the import statement
+[33m1aa9834[m fixed -module not found
+[33mb83de84[m code updated
+[33md5befb8[m minor updates to the parser
+[33m4dac203[m minor error fix
+[33mb5e1106[m commits1
+[33m341de1a[m large request body
+[33me29c0ae[m updated the flow logic
+[33mb4d9cd4[m initial changes
+[33m03d5c8a[m udpate the logic again
+[33m498acb7[m updating the logic
+[33ma0d3c2a[m updated the logic agani
+[33m82681b0[m udpated the logic
+[33m66fbcf8[m added a bit more functionality
+[33m8516064[m segregating the code
+[33mf35694b[m segregated the code
+[33m411844e[m updated the code for webhook and server
+[33mccf7094[m updated the tokes
+[33m3439e9b[m updated the whatsapp token
+[33m2f5a09c[m s
+[33ma772910[m updated the serverjs
+[33m31d4258[m v1.0.1.1
+[33m3620eed[m update to code
+[33m8b53f93[m installed necessary prerequistes
+[33m67f14ec[m updates to the code
+[33mce202f1[m updates
+[33m02d56d2[m changes to the code
+[33m54a0c55[m minor changes
+[33md4d05a0[m Major changes to code
+[33mc1aa2e3[m minor error fix
+[33m7abde19[m minor change
+[33m1538a92[m adding a greeting component
+[33mfc4aa7b[m intial changes v.0.1
+[33m99f0e43[m intial changes v1.0
+[33m1e56c4e[m logic udpated v7
+[33m9bdce95[m logic updated v7
+[33m2683e6a[m logic updated v6
+[33m1d32092[m logic updated (errors)v5
+[33md7fafc0[m logic updated v4
+[33m2a3f79d[m logic udpated v3
+[33mb72543e[m updated the logic v2
+[33m142074f[m updated the logic v1
+[33m7c82c16[m made changes to WhatsApp button replies
+[33m7e511b5[m changes to menus v2
+[33m91d138a[m added sub menus
+[33m2e3e5db[m removed one button
+[33ma3322aa[m minor changes 2 to the code
+[33mf07c6d9[m minor changes to the code
+[33mcaec6ec[m changed the services to menu options
+[33m4e701f4[m added custom trigger
+[33m60a41f5[m Phone_Number_ID updated
+[33m4c2c716[m Updated production script and fixed npm warning
+[33m676a1c3[m Fix: Replacing the body-parser
+[33m2f371e7[m Fix: use CommonJS Syntax
+[33mcce52c5[m Fix webhook verification route
+[33mb847f3c[m Add start script v1
+[33mf8e942b[m Add start script
+[33m4ad9203[m Initial commit
